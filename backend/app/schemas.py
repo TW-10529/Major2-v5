@@ -185,6 +185,7 @@ class EmployeeBase(BaseModel):
     weekly_hours: float = 40
     daily_max_hours: float = 8
     shifts_per_week: int = 5
+    paid_leave_per_year: int = 10
     skills: List[str] = []
 
 
@@ -207,6 +208,7 @@ class EmployeeResponse(BaseModel):
     weekly_hours: float
     daily_max_hours: float
     shifts_per_week: int
+    paid_leave_per_year: int
     skills: List[str]
     is_active: bool
 

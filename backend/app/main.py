@@ -13,7 +13,7 @@ from calendar import monthrange
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete, update, and_, or_, func, Float
+from sqlalchemy import select, delete, update, and_, or_, func, Float, Integer
 from sqlalchemy.orm import selectinload, with_loader_criteria
 from datetime import datetime, timedelta, date
 from typing import List, Dict, Optional
@@ -2250,6 +2250,44 @@ async def create_leave_request(
         if not employee or leave_data.employee_id != employee.id:
             raise HTTPException(status_code=403, detail="Can only request leave for yourself")
     
+    # Get the employee to check paid leave limit
+    emp_result = await db.execute(select(Employee).filter(Employee.id == leave_data.employee_id))
+    employee = emp_result.scalar_one_or_none()
+    
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    # If requesting paid leave, check if it exceeds the annual entitlement
+    if leave_data.leave_type == 'paid':
+        # Calculate days for this request
+        days_requested = (leave_data.end_date - leave_data.start_date).days + 1
+        
+        # Get already approved paid leave
+        # Calculate days as: (end_date - start_date) + 1
+        approved_paid_result = await db.execute(
+            select(func.sum(
+                func.cast(
+                    LeaveRequest.end_date - LeaveRequest.start_date + 1,
+                    Integer
+                )
+            )).filter(
+                LeaveRequest.employee_id == leave_data.employee_id,
+                LeaveRequest.leave_type == 'paid',
+                LeaveRequest.status == LeaveStatus.APPROVED
+            )
+        )
+        already_taken = approved_paid_result.scalar() or 0
+        
+        total_would_be = already_taken + days_requested
+        annual_entitlement = employee.paid_leave_per_year
+        
+        if total_would_be > annual_entitlement:
+            remaining = max(0, annual_entitlement - already_taken)
+            raise HTTPException(
+                status_code=400,
+                detail=f"Cannot take {days_requested} days of paid leave. Annual entitlement is {annual_entitlement} days, already taken {already_taken} days. Only {remaining} days remaining."
+            )
+    
     leave_request = LeaveRequest(**leave_data.dict())
     db.add(leave_request)
     await db.commit()
@@ -2296,6 +2334,128 @@ async def list_leave_requests(
         )
     
     return result.scalars().all()
+
+
+@app.get("/leave-statistics")
+async def get_leave_statistics(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get leave statistics for current employee (or all if manager/admin)"""
+    if current_user.user_type == UserType.EMPLOYEE:
+        # Get employee record for current user
+        emp_result = await db.execute(
+            select(Employee).filter(Employee.user_id == current_user.id)
+        )
+        employee = emp_result.scalar_one_or_none()
+        if not employee:
+            raise HTTPException(status_code=404, detail="Employee not found")
+        
+        # Get all leave requests for this employee
+        result = await db.execute(
+            select(LeaveRequest)
+            .filter(LeaveRequest.employee_id == employee.id, LeaveRequest.status == LeaveStatus.APPROVED)
+        )
+        approved_leaves = result.scalars().all()
+        
+        # Calculate taken paid leaves
+        from datetime import date
+        taken_paid = 0
+        for leave in approved_leaves:
+            if leave.leave_type == 'paid':
+                days = (leave.end_date - leave.start_date).days + 1
+                taken_paid += days
+        
+        total_paid_leave = employee.paid_leave_per_year  # Use employee's paid leave setting
+        available_paid = max(0, total_paid_leave - taken_paid)
+        
+        return {
+            "total_paid_leave": total_paid_leave,
+            "taken_paid_leave": taken_paid,
+            "available_paid_leave": available_paid,
+            "employee_name": f"{employee.first_name} {employee.last_name}"
+        }
+    else:
+        raise HTTPException(status_code=403, detail="Only employees can access their statistics")
+
+
+@app.get("/leave-statistics/employee/{employee_id}")
+async def get_employee_leave_statistics(
+    employee_id: str,
+    current_user: User = Depends(require_manager),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get leave statistics for a specific employee (manager only) with monthly breakdown"""
+    from datetime import date, datetime
+    from collections import defaultdict
+    
+    # Get the manager record for current user
+    manager_result = await db.execute(select(Manager).filter(Manager.user_id == current_user.id))
+    manager = manager_result.scalar_one_or_none()
+    
+    if not manager:
+        raise HTTPException(status_code=403, detail="User is not a manager")
+    
+    # Get employee record by employee_id (string field)
+    emp_result = await db.execute(
+        select(Employee).filter(Employee.employee_id == employee_id, Employee.department_id == manager.department_id)
+    )
+    employee = emp_result.scalar_one_or_none()
+    
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found in your department")
+    
+    # Get all approved leave requests for this employee using the integer id
+    result = await db.execute(
+        select(LeaveRequest)
+        .filter(LeaveRequest.employee_id == employee.id, LeaveRequest.status == LeaveStatus.APPROVED)
+        .order_by(LeaveRequest.start_date)
+    )
+    approved_leaves = result.scalars().all()
+    
+    # Calculate leave statistics and monthly breakdown
+    taken_paid = 0
+    taken_unpaid = 0
+    monthly_breakdown = defaultdict(lambda: {'paid': 0, 'unpaid': 0, 'total': 0})
+    
+    for leave in approved_leaves:
+        days = (leave.end_date - leave.start_date).days + 1
+        month_key = leave.start_date.strftime('%Y-%m')  # Format: "2025-01"
+        month_name = leave.start_date.strftime('%B %Y')  # Format: "January 2025"
+        
+        if leave.leave_type == 'paid':
+            taken_paid += days
+            monthly_breakdown[month_key]['paid'] += days
+        else:
+            taken_unpaid += days
+            monthly_breakdown[month_key]['unpaid'] += days
+        
+        monthly_breakdown[month_key]['total'] += days
+        monthly_breakdown[month_key]['month_name'] = month_name
+    
+    total_paid_leave = employee.paid_leave_per_year  # Use employee's paid leave setting
+    available_paid = max(0, total_paid_leave - taken_paid)
+    
+    # Convert monthly breakdown to list and sort by month
+    monthly_list = []
+    for month_key in sorted(monthly_breakdown.keys()):
+        monthly_list.append({
+            'month': monthly_breakdown[month_key]['month_name'],
+            'paid': monthly_breakdown[month_key]['paid'],
+            'unpaid': monthly_breakdown[month_key]['unpaid'],
+            'total': monthly_breakdown[month_key]['total']
+        })
+    
+    return {
+        "employee_id": employee.employee_id,
+        "employee_name": f"{employee.first_name} {employee.last_name}",
+        "total_paid_leave": total_paid_leave,
+        "taken_paid_leave": taken_paid,
+        "taken_unpaid_leave": taken_unpaid,
+        "available_paid_leave": available_paid,
+        "total_leaves_taken": taken_paid + taken_unpaid,
+        "monthly_breakdown": monthly_list
+    }
 
 
 @app.post("/manager/approve-leave/{leave_id}")

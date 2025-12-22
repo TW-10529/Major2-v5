@@ -98,6 +98,7 @@ class Employee(Base):
     weekly_hours = Column(Float, default=40)
     daily_max_hours = Column(Float, default=8)
     shifts_per_week = Column(Integer, default=5)
+    paid_leave_per_year = Column(Integer, default=10)  # Paid leave days per year
     skills = Column(JSON, default=list)
     hire_date = Column(Date)
     is_active = Column(Boolean, default=True)
