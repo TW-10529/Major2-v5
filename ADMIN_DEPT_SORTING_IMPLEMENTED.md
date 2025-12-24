@@ -95,3 +95,4 @@ The feature uses existing endpoints:
 - `/attendance` - Get today's attendance records
 
 No database changes required - fully compatible with existing schema.
+ssss

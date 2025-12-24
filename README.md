@@ -42,22 +42,25 @@ This is a **complete, production-ready** shift scheduling system with:
 - Terminal/Command Prompt
 ```
 
-### 2. Setup
+### 2. Initialize on New System (IMPORTANT!)
 ```bash
 # Navigate to project
 cd shift-scheduler-v5-complete
 
-# Start all services (this may take 2-3 minutes first time)
+# Start all services
 docker-compose up -d
 
-# Wait for database to be ready (check logs)
-docker-compose logs -f postgres
+# Wait for database to be ready (takes ~30 seconds)
+sleep 30
 
-# When you see "database system is ready to accept connections"
-# Press Ctrl+C and initialize the database
-
-# Initialize database with sample data
+# ===== STEP 1: Initialize database schema =====
 docker-compose exec backend python init_db.py
+
+# ===== STEP 2: Load test/sample data =====
+docker-compose exec backend python seed_unified.py
+
+# ===== STEP 3: Start backend (migrations auto-run) =====
+# Backend will run in docker-compose, migrations execute on startup
 ```
 
 ### 3. Access Application
@@ -86,6 +89,96 @@ API Docs:  http://localhost:8000/docs
 - Username: `sarah.j`
 - Username: `michael.c`
 - Password: `employee123` (for all)
+
+---
+
+## 🔧 Initialization Details
+
+### What Happens at Startup?
+
+The backend has **automatic migrations** that run when you start the server:
+
+```
+Backend Startup Sequence:
+├── 1. Load FastAPI application
+├── 2. Execute @app.on_event("startup")
+│   ├── Add employee_id column (if needed)
+│   ├── Add manager_id column (if needed)
+│   └── Add comp-off tracking enhancements (if needed)
+├── 3. Start listening on port 8000
+└── Ready to handle requests
+```
+
+**All migrations are idempotent** - they check if columns/tables exist before creating them, so it's safe to restart the backend multiple times.
+
+### 3-Step Initialization Process
+
+#### Step 1: Initialize Database Schema
+```bash
+python init_db.py
+```
+**What it does:**
+- Drops all existing tables (if any)
+- Creates fresh database schema
+- Creates admin user (admin/admin123)
+- Ready for empty system
+
+#### Step 2: Seed Test Data
+```bash
+python seed_unified.py
+```
+**What it does:**
+- Creates 5 departments
+- Creates 5 managers (1 per department)
+- Creates 50+ employees with realistic data
+- Creates roles and shifts
+- Generates current month schedules
+- Adds sample leave requests
+- Adds sample comp-off records
+- Adds attendance check-in/out data
+- Ready for full testing
+
+#### Step 3: Start Backend (Automatic)
+```bash
+# Via Docker: (automatic with docker-compose up)
+# Via Direct: uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+**What it does:**
+- Loads all models
+- Runs startup migrations (employee_id, manager_id, comp-off)
+- Establishes database connection
+- Server is ready to accept API requests
+
+### Command Reference
+
+```bash
+# Full fresh start from scratch
+docker-compose down                        # Stop all services
+docker-compose up -d                       # Start fresh
+sleep 30                                   # Wait for DB
+docker-compose exec backend python init_db.py       # Initialize schema
+docker-compose exec backend python seed_unified.py  # Load test data
+# Backend automatically restarts and runs migrations
+
+# Quick restart (keep data)
+docker-compose restart backend            # Migrations auto-run
+docker-compose restart frontend           # Frontend reloads
+
+# View logs
+docker-compose logs -f backend            # Backend logs
+docker-compose logs -f postgres           # Database logs
+docker-compose logs -f frontend           # Frontend logs
+
+# Direct development (no Docker)
+cd backend
+python init_db.py                         # Initialize DB
+python seed_unified.py                    # Load test data
+uvicorn app.main:app --reload            # Start with auto-reload (migrations auto-run)
+
+cd frontend
+npm install                               # Install dependencies
+npm run dev                               # Start dev server
+```
 
 ---
 
