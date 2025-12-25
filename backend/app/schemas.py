@@ -409,7 +409,6 @@ class ScheduleResponse(BaseModel):
     end_time: Optional[str]
     status: str
     notes: Optional[str]
-    role: Optional['RoleResponse'] = None
 
     class Config:
         from_attributes = True

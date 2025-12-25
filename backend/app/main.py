@@ -1946,93 +1946,62 @@ async def get_attendance(
     db: AsyncSession = Depends(get_db)
 ):
     """Get attendance records with optional filters"""
-    query = select(Attendance).options(
-        selectinload(Attendance.employee),
-        selectinload(Attendance.schedule).selectinload(Schedule.role)
-    )
-
-    # Role-based filtering
-    target_employee = None
-    manager_dept = None
-    if current_user.user_type == UserType.EMPLOYEE:
-        # Get employee by user_id
-        emp_result = await db.execute(
-            select(Employee).filter(Employee.user_id == current_user.id)
+    try:
+        query = select(Attendance).options(
+            selectinload(Attendance.employee),
+            selectinload(Attendance.schedule)  # Load schedule but not the nested role yet
         )
-        target_employee = emp_result.scalar_one_or_none()
-        if target_employee:
-            query = query.filter(Attendance.employee_id == target_employee.id)
-        else:
-            return []
-    elif current_user.user_type == UserType.MANAGER:
-        # Get manager's actual department
-        manager_dept = await get_manager_department(current_user, db)
-        if manager_dept:
-            subquery = select(Employee.id).filter(Employee.department_id == manager_dept)
-            query = query.filter(Attendance.employee_id.in_(subquery))
-        else:
-            return []
 
-    # Additional filters
-    if employee_id and current_user.user_type != UserType.EMPLOYEE:
-        query = query.filter(Attendance.employee_id == employee_id)
+        # Role-based filtering
+        target_employee = None
+        manager_dept = None
+        if current_user.user_type == UserType.EMPLOYEE:
+            # Get employee by user_id
+            emp_result = await db.execute(
+                select(Employee).filter(Employee.user_id == current_user.id)
+            )
+            target_employee = emp_result.scalar_one_or_none()
+            if target_employee:
+                query = query.filter(Attendance.employee_id == target_employee.id)
+            else:
+                return []
+        elif current_user.user_type == UserType.MANAGER:
+            # Get manager's actual department
+            manager_dept = await get_manager_department(current_user, db)
+            if manager_dept:
+                subquery = select(Employee.id).filter(Employee.department_id == manager_dept)
+                query = query.filter(Attendance.employee_id.in_(subquery))
+            else:
+                return []
 
-    if start_date:
-        query = query.filter(Attendance.date >= start_date)
-    if end_date:
-        query = query.filter(Attendance.date <= end_date)
+        # Additional filters
+        if employee_id and current_user.user_type != UserType.EMPLOYEE:
+            query = query.filter(Attendance.employee_id == employee_id)
 
-    result = await db.execute(query.order_by(Attendance.date.desc()))
-    attendance_records = list(result.scalars().all())
-    
-    # If schedules are missing, try to find them by employee_id + date
-    if attendance_records:
-        missing_schedules = []
+        if start_date:
+            query = query.filter(Attendance.date >= start_date)
+        if end_date:
+            query = query.filter(Attendance.date <= end_date)
+
+        result = await db.execute(query.order_by(Attendance.date.desc()))
+        attendance_records = list(result.scalars().all())
+        
+        # Calculate and populate night_hours if not already set
         for record in attendance_records:
-            if not record.schedule and record.employee_id and record.date:
-                missing_schedules.append((record.employee_id, record.date))
+            if record.in_time and record.out_time and not record.night_hours:
+                record.night_hours = calculate_night_hours(record.in_time, record.out_time, night_start_hour=22)
+            
+            # If schedule is a leave/comp-off, clear the times for employees viewing
+            if current_user.user_type == UserType.EMPLOYEE and record.schedule and record.schedule.status in ['leave', 'comp_off_taken', 'comp_off_earned']:
+                record.schedule.start_time = None
+                record.schedule.end_time = None
         
-        if missing_schedules:
-            # Get all schedules for this date range
-            dates = {date_val for _, date_val in missing_schedules}
-            if dates:
-                min_date = min(dates)
-                max_date = max(dates)
-                
-                schedule_result = await db.execute(
-                    select(Schedule).filter(
-                        Schedule.date >= min_date,
-                        Schedule.date <= max_date
-                    ).order_by(Schedule.status)  # 'scheduled' comes before 'leave'
-                )
-                all_schedules = schedule_result.scalars().all()
-                
-                # Create map of (employee_id, date) -> schedule
-                # Prefer 'scheduled' status over 'leave' status
-                schedule_map = {}
-                for sched in all_schedules:
-                    key = (sched.employee_id, sched.date)
-                    # Only add if not already present, or if this is 'scheduled' and current is not
-                    if key not in schedule_map or (sched.status == 'scheduled' and schedule_map[key].status != 'scheduled'):
-                        schedule_map[key] = sched
-                
-                # Assign schedules to records
-                for record in attendance_records:
-                    if not record.schedule and record.employee_id and record.date:
-                        key = (record.employee_id, record.date)
-                        record.schedule = schedule_map.get(key)
-    
-    # Calculate and populate night_hours if not already set
-    for record in attendance_records:
-        if record.in_time and record.out_time and not record.night_hours:
-            record.night_hours = calculate_night_hours(record.in_time, record.out_time, night_start_hour=22)
-        
-        # If schedule is a leave/comp-off, clear the times for employees viewing
-        if current_user.user_type == UserType.EMPLOYEE and record.schedule and record.schedule.status in ['leave', 'comp_off_taken', 'comp_off_earned']:
-            record.schedule.start_time = None
-            record.schedule.end_time = None
-    
-    return attendance_records
+        return attendance_records
+    except Exception as e:
+        print(f"ERROR in get_attendance: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
 
 
 @app.get("/attendance/today")
@@ -4449,10 +4418,144 @@ async def approve_leave(
         # No validation needed - just create the comp-off schedule
         print(f"[DEBUG] ✓ Creating comp-off_taken schedule (no constraint validation needed)", flush=True)
 
+        # ===== FETCH SHIFT TIMES FOR COMP-OFF DAYS =====
+        # Get the employee's actual scheduled shift for the leave date
+        # Priority: 1) Shift ON the leave date, 2) Recent shift before, 3) Next shift after, 4) Role's highest priority
+        shift_start_time = None
+        shift_end_time = None
+        shift_id = None
+        
+        # For multi-day leaves, we'll determine shift times per day in the loop below
+        # For now, get a default shift to use for all days
+        
+        # First, try to get a scheduled shift ON the leave start date itself
+        same_day_result = await db.execute(
+            select(Schedule)
+            .filter(
+                Schedule.employee_id == employee.id,
+                Schedule.date == leave_request.start_date,
+                Schedule.status == 'scheduled'
+            )
+            .limit(1)
+        )
+        same_day_schedule = same_day_result.scalar_one_or_none()
+        
+        if same_day_schedule and same_day_schedule.shift_id:
+            # Use the shift from the same-day schedule
+            shift_result = await db.execute(
+                select(Shift).filter(Shift.id == same_day_schedule.shift_id)
+            )
+            shift = shift_result.scalar_one_or_none()
+            if shift:
+                shift_start_time = shift.start_time
+                shift_end_time = shift.end_time
+                shift_id = shift.id
+                print(f"[DEBUG] ✓ Fetched shift times from same-day schedule: {shift.name} ({shift_start_time}-{shift_end_time})", flush=True)
+        
+        # Fallback 1: if no same-day schedule, try to get the most recent scheduled shift before the leave
+        if not shift_id:
+            recent_sched_result = await db.execute(
+                select(Schedule)
+                .filter(
+                    Schedule.employee_id == employee.id,
+                    Schedule.date < leave_request.start_date,
+                    Schedule.status == 'scheduled'
+                )
+                .order_by(Schedule.date.desc())
+                .limit(1)
+            )
+            recent_schedule = recent_sched_result.scalar_one_or_none()
+            
+            if recent_schedule and recent_schedule.shift_id:
+                # Use the shift from the employee's recent schedule
+                shift_result = await db.execute(
+                    select(Shift).filter(Shift.id == recent_schedule.shift_id)
+                )
+                shift = shift_result.scalar_one_or_none()
+                if shift:
+                    shift_start_time = shift.start_time
+                    shift_end_time = shift.end_time
+                    shift_id = shift.id
+                    print(f"[DEBUG] ✓ Fetched shift times from recent schedule: {shift.name} ({shift_start_time}-{shift_end_time})", flush=True)
+        
+        # Fallback 2: if no recent schedule, try to get the next scheduled shift (employee's ongoing pattern)
+        if not shift_id:
+            next_sched_result = await db.execute(
+                select(Schedule)
+                .filter(
+                    Schedule.employee_id == employee.id,
+                    Schedule.date > leave_request.start_date,
+                    Schedule.status == 'scheduled'
+                )
+                .order_by(Schedule.date.asc())
+                .limit(1)
+            )
+            next_schedule = next_sched_result.scalar_one_or_none()
+            
+            if next_schedule and next_schedule.shift_id:
+                shift_result = await db.execute(
+                    select(Shift).filter(Shift.id == next_schedule.shift_id)
+                )
+                shift = shift_result.scalar_one_or_none()
+                if shift:
+                    shift_start_time = shift.start_time
+                    shift_end_time = shift.end_time
+                    shift_id = shift.id
+                    print(f"[DEBUG] ✓ Fetched shift times from next schedule: {shift.name} ({shift_start_time}-{shift_end_time})", flush=True)
+        
+        # Fallback 3: if no recent or next schedule, get the highest priority shift for their role
+        if not shift_id and employee.role_id:
+            shift_result = await db.execute(
+                select(Shift)
+                .filter(Shift.role_id == employee.role_id, Shift.is_active == True)
+                .order_by(Shift.priority.desc())
+                .limit(1)
+            )
+            shift = shift_result.scalar_one_or_none()
+            
+            if shift:
+                shift_start_time = shift.start_time
+                shift_end_time = shift.end_time
+                shift_id = shift.id
+                print(f"[DEBUG] ✓ Fallback: Fetched highest priority shift: {shift.name} ({shift_start_time}-{shift_end_time}, priority={shift.priority})", flush=True)
+            else:
+                print(f"[DEBUG] ⚠ No active shifts found for role {employee.role_id}", flush=True)
+
         # Create schedule entry for each day of comp-off
         current_date = leave_request.start_date
         comp_off_days = 0
         while current_date <= leave_request.end_date:
+            # Get shift times for THIS specific day
+            day_shift_start_time = shift_start_time
+            day_shift_end_time = shift_end_time
+            day_shift_id = shift_id
+            
+            # Check if there's a scheduled shift ON THIS DAY (overrides the default)
+            same_day_result = await db.execute(
+                select(Schedule)
+                .filter(
+                    Schedule.employee_id == employee.id,
+                    Schedule.date == current_date,
+                    Schedule.status == 'scheduled'
+                )
+                .limit(1)
+            )
+            same_day_schedule = same_day_result.scalar_one_or_none()
+            
+            if same_day_schedule and same_day_schedule.shift_id:
+                # Use the shift from this day's schedule
+                shift_result = await db.execute(
+                    select(Shift).filter(Shift.id == same_day_schedule.shift_id)
+                )
+                shift = shift_result.scalar_one_or_none()
+                if shift:
+                    day_shift_start_time = shift.start_time
+                    day_shift_end_time = shift.end_time
+                    day_shift_id = shift.id
+                    print(f"[DEBUG] Day {current_date}: Using same-day shift: {shift.name} ({day_shift_start_time}-{day_shift_end_time})", flush=True)
+            else:
+                print(f"[DEBUG] Day {current_date}: No same-day scheduled shift found, using default: {day_shift_start_time}-{day_shift_end_time}", flush=True)
+            
             # Delete any existing non-comp_off_taken schedules for this date to avoid conflicts
             existing_result = await db.execute(
                 select(Schedule).filter(
@@ -4469,13 +4572,15 @@ async def approve_leave(
                     await db.delete(sched)
             
             # Create comp-off usage schedule (taking comp-off as leave)
+            # Show shift times for reference even though employee is off
             comp_off_schedule = Schedule(
                 department_id=employee.department_id,
                 employee_id=employee.id,
                 role_id=employee.role_id,
+                shift_id=day_shift_id,  # Reference the shift for display purposes
                 date=current_date,
-                start_time=None,  # No shift time for comp-off usage - it's a full day off
-                end_time=None,
+                start_time=day_shift_start_time,  # Show the actual shift times for this day
+                end_time=day_shift_end_time,
                 status="comp_off_taken",  # Status for comp-off taken (using earned comp-off)
                 notes=f"Comp-Off Taken: {leave_request.reason or 'Using earned comp-off'}"
             )
@@ -4920,13 +5025,151 @@ async def approve_comp_off(
     
     print(f"[DEBUG] ✓ Approving comp-off for {employee.first_name} on {comp_off.comp_off_date}", flush=True)
     
-    # For comp-off taken: no need to find shift times, just create comp_off_taken schedule
-    # (comp_off_taken replaces the scheduled shift, no actual work hours)
+    # For comp-off taken: fetch the shift times from the employee's role/shifts
+    # (comp_off_taken replaces the scheduled shift, but display shift times for reference)
+    
+    # ===== FETCH SHIFT TIMES FOR COMP-OFF DAY =====
+    # Get the employee's actual scheduled shift for the comp-off date
+    # Priority: 1) Shift ON the comp-off date, 2) Recent shift before, 3) Next shift after, 4) Role's highest priority
+    shift_start_time = None
+    shift_end_time = None
+    shift_id = None
+    
+    # First, try to get a scheduled shift ON the comp-off date itself
+    same_day_result = await db.execute(
+        select(Schedule)
+        .filter(
+            Schedule.employee_id == employee.id,
+            Schedule.date == comp_off.comp_off_date,
+            Schedule.status == 'scheduled'
+        )
+        .limit(1)
+    )
+    same_day_schedule = same_day_result.scalar_one_or_none()
+    
+    if same_day_schedule and same_day_schedule.shift_id:
+        # Use the shift from the same-day schedule (the one being replaced by comp-off)
+        shift_result = await db.execute(
+            select(Shift).filter(Shift.id == same_day_schedule.shift_id)
+        )
+        shift = shift_result.scalar_one_or_none()
+        if shift:
+            shift_start_time = shift.start_time
+            shift_end_time = shift.end_time
+            shift_id = shift.id
+            print(f"[DEBUG] ✓ Fetched shift times from same-day schedule: {shift.name} ({shift_start_time}-{shift_end_time})", flush=True)
+    
+    # Fallback 1: if no same-day schedule, try to get the most recent scheduled shift before the comp-off date
+    if not shift_id:
+        recent_sched_result = await db.execute(
+            select(Schedule)
+            .filter(
+                Schedule.employee_id == employee.id,
+                Schedule.date < comp_off.comp_off_date,
+                Schedule.status == 'scheduled'
+            )
+            .order_by(Schedule.date.desc())
+            .limit(1)
+        )
+        recent_schedule = recent_sched_result.scalar_one_or_none()
+        
+        if recent_schedule and recent_schedule.shift_id:
+            # Use the shift from the employee's recent schedule
+            shift_result = await db.execute(
+                select(Shift).filter(Shift.id == recent_schedule.shift_id)
+            )
+            shift = shift_result.scalar_one_or_none()
+            if shift:
+                shift_start_time = shift.start_time
+                shift_end_time = shift.end_time
+                shift_id = shift.id
+                print(f"[DEBUG] ✓ Fetched shift times from recent schedule: {shift.name} ({shift_start_time}-{shift_end_time})", flush=True)
+    
+    # Fallback 2: if no recent schedule, try to get the next scheduled shift (employee's ongoing pattern)
+    if not shift_id:
+        next_sched_result = await db.execute(
+            select(Schedule)
+            .filter(
+                Schedule.employee_id == employee.id,
+                Schedule.date > comp_off.comp_off_date,
+                Schedule.status == 'scheduled'
+            )
+            .order_by(Schedule.date.asc())
+            .limit(1)
+        )
+        next_schedule = next_sched_result.scalar_one_or_none()
+        
+        if next_schedule and next_schedule.shift_id:
+            shift_result = await db.execute(
+                select(Shift).filter(Shift.id == next_schedule.shift_id)
+            )
+            shift = shift_result.scalar_one_or_none()
+            if shift:
+                shift_start_time = shift.start_time
+                shift_end_time = shift.end_time
+                shift_id = shift.id
+                print(f"[DEBUG] ✓ Fetched shift times from next schedule: {shift.name} ({shift_start_time}-{shift_end_time})", flush=True)
+    
+    # Fallback 3: if no recent or next schedule, get the highest priority shift for their role
+    if not shift_id and employee.role_id:
+        shift_result = await db.execute(
+            select(Shift)
+            .filter(Shift.role_id == employee.role_id, Shift.is_active == True)
+            .order_by(Shift.priority.desc())
+            .limit(1)
+        )
+        shift = shift_result.scalar_one_or_none()
+        
+        if shift:
+            shift_start_time = shift.start_time
+            shift_end_time = shift.end_time
+            shift_id = shift.id
+            print(f"[DEBUG] ✓ Fallback: Fetched highest priority shift: {shift.name} ({shift_start_time}-{shift_end_time}, priority={shift.priority})", flush=True)
+        else:
+            print(f"[DEBUG] ⚠ No active shifts found for role {employee.role_id}", flush=True)
     
     # ===== CONSTRAINT VALIDATION for comp-off taken =====
     # Validate 5-shifts-per-week and consecutive-shifts constraints
     # These constraints should NOT apply to comp-off_taken since it replaces a shift
     # and doesn't add to the workload
+    
+    # Check one more time if there's a scheduled shift ON THIS DAY (for accuracy)
+    same_day_result = await db.execute(
+        select(Schedule)
+        .filter(
+            Schedule.employee_id == employee.id,
+            Schedule.date == comp_off.comp_off_date,
+            Schedule.status == 'scheduled'
+        )
+        .limit(1)
+    )
+    same_day_schedule = same_day_result.scalar_one_or_none()
+    
+    if same_day_schedule and same_day_schedule.shift_id:
+        # Use the shift from this day's schedule (the one being replaced by comp-off)
+        shift_result = await db.execute(
+            select(Shift).filter(Shift.id == same_day_schedule.shift_id)
+        )
+        shift = shift_result.scalar_one_or_none()
+        if shift:
+            shift_start_time = shift.start_time
+            shift_end_time = shift.end_time
+            shift_id = shift.id
+            print(f"[DEBUG] Found same-day shift: {shift.name} ({shift_start_time}-{shift_end_time})", flush=True)
+    
+    # Delete any existing schedules for this date (to avoid duplicates)
+    # This includes both regular schedules and any existing comp_off_taken schedules
+    await db.execute(
+        delete(Schedule).where(
+            and_(
+                Schedule.employee_id == employee.id,
+                Schedule.date == comp_off.comp_off_date
+            )
+        )
+    )
+    await db.flush()  # Flush the deletes
+    
+    print(f"[DEBUG] Deleted all existing schedules for {employee.first_name} on {comp_off.comp_off_date}")
     
     # Create a schedule entry for the comp-off day
     # Status: comp_off_taken means employee is using earned comp-off instead of working
@@ -4934,12 +5177,12 @@ async def approve_comp_off(
         department_id=employee.department_id,
         employee_id=employee.id,
         role_id=employee.role_id,
-        shift_id=None,  # No actual shift since using comp-off
+        shift_id=shift_id,  # Reference the shift for display purposes
         date=comp_off.comp_off_date,
-        start_time=None,  # No shift times for comp-off taken
-        end_time=None,
+        start_time=shift_start_time,  # Show the actual shift times for this day
+        end_time=shift_end_time,
         status="comp_off_taken",  # Status: using comp-off instead of working
-        notes=f"Comp-Off Earned: {comp_off.reason or 'Worked on non-shift day'}"
+        notes=f"Comp-Off Usage: {comp_off.reason or 'Worked on non-shift day'}"
     )
     
     db.add(new_schedule)
@@ -5939,36 +6182,49 @@ async def generate_schedules(
                 "schedules": []
             }
         
-        # If regenerate is True, delete existing schedules first (but PRESERVE regular leaves)
+        # ===== PRESERVE SCHEDULES WITH CHECK-INS DURING REGENERATION =====
+        # Get schedule IDs that have check-in records - these should NOT be deleted
+        schedules_with_checkins = set()
         if existing_schedules and regenerate:
-            print(f"[DEBUG] Regenerating - deleting {len(existing_schedules)} existing schedules", flush=True)
+            checkin_sched_result = await db.execute(
+                select(CheckInOut.schedule_id)
+                .where(CheckInOut.schedule_id != None)
+                .distinct()
+            )
+            schedules_with_checkins = set(checkin_sched_result.scalars().all())
             
-            # Get 'scheduled' and 'comp_off_taken' schedules to delete (will recreate them)
-            # Preserve: 'leave', 'leave_half_morning', 'leave_half_afternoon', 'comp_off_earned'
+            if schedules_with_checkins:
+                print(f"[DEBUG] Found {len(schedules_with_checkins)} schedules with check-in records - will skip deletion", flush=True)
+        
+        # If regenerate is True, delete existing schedules first (but PRESERVE leaves, comp-off, and schedules with check-ins)
+        if existing_schedules and regenerate:
+            print(f"[DEBUG] Regenerating - deleting {len(existing_schedules)} existing schedules (excluding ones with check-ins)", flush=True)
+            
+            # Get ONLY 'scheduled' schedules to delete (will recreate them)
+            # BUT: Exclude any that have check-in records
+            # Preserve: 'leave', 'leave_half_morning', 'leave_half_afternoon', 'comp_off_earned', 'comp_off_taken'
+            # comp_off_taken is approved leave and should NOT be deleted!
+            # Build filter conditions dynamically
+            filter_conditions = [
+                Schedule.department_id == department_id,
+                Schedule.date >= start_date,
+                Schedule.date <= end_date,
+                Schedule.status == 'scheduled'  # Only delete work shifts, NOT approved leaves or comp-off usage
+            ]
+            # Exclude schedules with check-ins if any exist
+            if schedules_with_checkins:
+                filter_conditions.append(~Schedule.id.in_(list(schedules_with_checkins)))
+            
             schedules_to_delete_result = await db.execute(
-                select(Schedule.id)
-                .filter(
-                    Schedule.department_id == department_id,
-                    Schedule.date >= start_date,
-                    Schedule.date <= end_date,
-                    Schedule.status.in_(['scheduled', 'comp_off_taken'])  # Delete work shifts and comp-off usage, recreate them
-                )
+                select(Schedule.id).filter(*filter_conditions)
             )
             schedules_to_delete_ids = schedules_to_delete_result.scalars().all()
             
             if schedules_to_delete_ids:
-                print(f"[DEBUG] Deleting {len(schedules_to_delete_ids)} work shift and comp-off usage schedules", flush=True)
+                print(f"[DEBUG] Deleting {len(schedules_to_delete_ids)} work shift schedules (excluding {len(schedules_with_checkins)} with check-ins)", flush=True)
                 
-                # IMPORTANT: Do NOT delete Attendance records - they are historical data
-                # Only nullify the schedule_id reference since we're regenerating schedules
-                # The attendance data (check-in times, worked hours) should be preserved
-                
-                # Nullify in CheckInOut table (schedule reference, but keep the check-in record)
-                await db.execute(
-                    update(CheckInOut)
-                    .where(CheckInOut.schedule_id.in_(schedules_to_delete_ids))
-                    .values(schedule_id=None)
-                )
+                # IMPORTANT: Do NOT touch check-in records - they are historical data
+                # Just delete the schedules that don't have check-ins
                 
                 # Nullify in CompOffRequest table (preserve comp-off requests)
                 await db.execute(
@@ -5984,18 +6240,23 @@ async def generate_schedules(
                     .values(schedule_id=None)
                 )
             
-            # Now delete the work shift and comp-off usage schedules
+            # Now delete ONLY the work shift schedules that don't have check-ins
+            # (do NOT delete comp-off taken or approved leaves or schedules with check-ins)
+            delete_filter_conditions = [
+                Schedule.department_id == department_id,
+                Schedule.date >= start_date,
+                Schedule.date <= end_date,
+                Schedule.status == 'scheduled'  # Only delete work shifts, NOT comp-off taken or leaves
+            ]
+            # Exclude schedules with check-ins if any exist
+            if schedules_with_checkins:
+                delete_filter_conditions.append(~Schedule.id.in_(list(schedules_with_checkins)))
+            
             await db.execute(
-                delete(Schedule)
-                .filter(
-                    Schedule.department_id == department_id,
-                    Schedule.date >= start_date,
-                    Schedule.date <= end_date,
-                    Schedule.status.in_(['scheduled', 'comp_off_taken'])  # Delete work shifts and comp-off usage
-                )
+                delete(Schedule).filter(*delete_filter_conditions)
             )
             await db.commit()
-            feedback = [f"Cleared work shift and comp-off usage schedules. Generating new schedule (preserving regular leaves)..."]
+            feedback = [f"Cleared work shift schedules. Generating new schedule (preserving comp-off, regular leaves, and schedules with check-ins)..."]
         else:
             feedback = []
 

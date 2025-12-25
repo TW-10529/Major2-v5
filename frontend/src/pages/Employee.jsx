@@ -99,7 +99,7 @@ const EmployeeDashboardHome = ({ user }) => {
           <Card title={`Today's Schedule - ${format(new Date(), 'MMM dd, yyyy')}`}>
             {todaySchedule ? (
               <div className="space-y-4">
-                {todaySchedule.status !== 'comp_off' && (
+                {todaySchedule.status !== 'comp_off_taken' && (
                   <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
                     <div>
                       <p className="text-sm text-gray-600">Shift Time</p>
@@ -110,13 +110,18 @@ const EmployeeDashboardHome = ({ user }) => {
                     <Clock className="w-8 h-8 text-blue-600" />
                   </div>
                 )}
-                {todaySchedule.status === 'comp_off' && (
+                {todaySchedule.status === 'comp_off_taken' && (
                   <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
                     <div>
                       <p className="text-sm text-gray-600">Status</p>
                       <p className="text-lg font-semibold text-purple-900">
                         Full Day Comp-Off
                       </p>
+                      {todaySchedule.start_time && todaySchedule.end_time && (
+                        <p className="text-xs text-purple-600 mt-2">
+                          Regular Shift: {todaySchedule.start_time} - {todaySchedule.end_time}
+                        </p>
+                      )}
                     </div>
                     <Clock className="w-8 h-8 text-purple-600" />
                   </div>

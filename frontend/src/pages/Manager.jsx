@@ -152,6 +152,7 @@ const ManagerEmployees = ({ user }) => {
   const [success, setSuccess] = useState('');
   const [showInactive, setShowInactive] = useState(false);
   const [employmentTypeFilter, setEmploymentTypeFilter] = useState('all');
+  const [managerDeptId, setManagerDeptId] = useState(user?.manager_department_id);
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -170,8 +171,24 @@ const ManagerEmployees = ({ user }) => {
   });
 
   useEffect(() => {
+    // If manager_department_id is not set, fetch it from the user's manager record
+    if (!managerDeptId) {
+      fetchManagerDept();
+    }
     loadData();
   }, [showInactive]);
+
+  const fetchManagerDept = async () => {
+    try {
+      const response = await api.get('/users/me');
+      if (response.data?.manager_department_id) {
+        setManagerDeptId(response.data.manager_department_id);
+        console.log('Fetched manager department:', response.data.manager_department_id);
+      }
+    } catch (error) {
+      console.error('Failed to fetch manager department:', error);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -203,12 +220,12 @@ const ManagerEmployees = ({ user }) => {
     setError('');
     setSuccess('');
     try {
-      // Manager accounts store their assigned department in manager_department_id
-      const departmentId = user?.manager_department_id;
+      // Use the manager's department ID (from user object or fetched from API)
+      const departmentId = managerDeptId || user?.manager_department_id;
       
       console.log('=== Employee Form Submit ===');
       console.log('User:', user);
-      console.log('Department ID:', departmentId);
+      console.log('Manager Department ID:', departmentId);
       console.log('Form Data:', formData);
       
       const employeeData = {
@@ -218,7 +235,7 @@ const ManagerEmployees = ({ user }) => {
       
       // Validate department_id exists
       if (!employeeData.department_id) {
-        setError('Department information is missing. Please ensure you are logged in as a manager.');
+        setError('⚠️ Department information is missing. Your manager account is not properly configured with a department assignment. Please contact your administrator.');
         return;
       }
       

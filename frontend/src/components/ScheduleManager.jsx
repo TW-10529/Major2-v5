@@ -33,11 +33,6 @@ const ScheduleManager = ({ departmentId, employees = [], roles = [] }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Constraint validation
-  const [showConstraintViolation, setShowConstraintViolation] = useState(false);
-  const [violationMessage, setViolationMessage] = useState('');
-  const [violationDetails, setViolationDetails] = useState(null);
-
   // Get Monday of week
   function getMonday(date) {
     const d = new Date(date);
@@ -244,39 +239,6 @@ const ScheduleManager = ({ departmentId, employees = [], roles = [] }) => {
     setEditedSchedules(editedSchedules.filter(s => s.id !== scheduleId));
   };
 
-  // Check scheduling constraints for drag-drop
-  const validateScheduleConstraints = (employeeId, newDate, existingSchedules) => {
-    const weekDates = getWeekDates(currentWeekStart);
-    
-    // Get all schedules for this employee in the current week
-    const employeeSchedules = existingSchedules.filter(
-      s => s.employee_id === employeeId && 
-           weekDates.includes(s.date)
-    );
-    
-    // Check 5-day max constraint
-    const daysWorking = new Set(employeeSchedules.map(s => s.date)).size;
-    if (daysWorking >= 5 && !employeeSchedules.find(s => s.date === newDate)) {
-      return {
-        isValid: false,
-        message: '5-Day Limit Exceeded',
-        details: `Employee is already scheduled for ${daysWorking} days this week. Maximum is 5 days per week.`
-      };
-    }
-    
-    // Check if already scheduled on that day
-    const daySchedules = employeeSchedules.filter(s => s.date === newDate);
-    if (daySchedules.length > 0) {
-      return {
-        isValid: false,
-        message: 'Already Scheduled',
-        details: `Employee is already scheduled for ${daySchedules[0].date}. Remove existing schedule first.`
-      };
-    }
-    
-    return { isValid: true };
-  };
-
   const handleEditTimes = (schedule) => {
     setEditingScheduleId(schedule.id);
     setEditingTimes({ ...schedule });
@@ -297,50 +259,9 @@ const ScheduleManager = ({ departmentId, employees = [], roles = [] }) => {
   const handleConfirmChanges = async () => {
     setLoading(true);
     try {
-      // Validate all constraints before saving
-      const weekDates = getWeekDates(currentWeekStart);
-      
-      // Group schedules by employee
-      const schedulesByEmployee = {};
-      editedSchedules.forEach(s => {
-        if (!schedulesByEmployee[s.employee_id]) {
-          schedulesByEmployee[s.employee_id] = [];
-        }
-        if (weekDates.includes(s.date)) {
-          schedulesByEmployee[s.employee_id].push(s);
-        }
-      });
-      
-      // Check 5-day constraint for each employee
-      for (const [empId, empSchedules] of Object.entries(schedulesByEmployee)) {
-        const uniqueDays = new Set(empSchedules.map(s => s.date));
-        if (uniqueDays.size > 5) {
-          const employee = employees.find(e => e.id === parseInt(empId));
-          setViolationMessage('5-Day Limit Exceeded');
-          setViolationDetails(`${employee?.first_name} ${employee?.last_name} is assigned ${uniqueDays.size} days in this week. Maximum is 5 days.`);
-          setShowConstraintViolation(true);
-          setLoading(false);
-          return;
-        }
-        
-        // Check for duplicate schedules on same day
-        empSchedules.forEach(sched => {
-          const dupCount = empSchedules.filter(s => s.date === sched.date).length;
-          if (dupCount > 1) {
-            const employee = employees.find(e => e.id === parseInt(empId));
-            setViolationMessage('Duplicate Schedule');
-            setViolationDetails(`${employee?.first_name} ${employee?.last_name} has multiple shifts on ${sched.date}.`);
-            setShowConstraintViolation(true);
-            setLoading(false);
-            return;
-          }
-        });
-      }
-      
       // Delete old schedules
       const deleteTasks = schedules
         .filter(s => !editedSchedules.find(e => e.id === s.id))
-
         .map(s => deleteSchedule(s.id));
 
       // Create new schedules
@@ -598,22 +519,6 @@ const ScheduleManager = ({ departmentId, employees = [], roles = [] }) => {
                           onDragOver={(e) => viewMode === 'edit' && !onLeave && e.preventDefault()}
                           onDrop={(e) => {
                             if (viewMode === 'edit' && draggedSchedule && !onLeave) {
-                              // Validate constraints before allowing drop
-                              // Check against the NEW employee (emp.id) we're assigning to
-                              const validation = validateScheduleConstraints(
-                                emp.id,
-                                date,
-                                editedSchedules.filter(s => s.id !== draggedSchedule.id)
-                              );
-                              
-                              if (!validation.isValid) {
-                                setViolationMessage(validation.message);
-                                setViolationDetails(validation.details);
-                                setShowConstraintViolation(true);
-                                setDraggedSchedule(null);
-                                return;
-                              }
-                              
                               setEditedSchedules(editedSchedules.map(s =>
                                 s.id === draggedSchedule.id
                                   ? { ...s, employee_id: emp.id, date }
@@ -624,7 +529,7 @@ const ScheduleManager = ({ departmentId, employees = [], roles = [] }) => {
                           }}
                         >
                           {onLeave && (
-                            <div className="text-center py-6">
+                            <div className="text-center py-3">
                               <div className={`font-bold text-sm ${isCompOff ? 'text-purple-700' : 'text-red-700'}`}>
                                 {isCompOff ? '🏥 COMP-OFF' : 'LEAVE'}
                               </div>
@@ -635,6 +540,12 @@ const ScheduleManager = ({ departmentId, employees = [], roles = [] }) => {
                                   ? '🌆 Half Day (PM)'
                                   : isCompOff ? 'Comp-Off Usage' : 'Approved Time Off'}
                               </div>
+                              {isCompOff && daySchedules.length > 0 && daySchedules[0]?.start_time && daySchedules[0]?.end_time && (
+                                <div className={`text-xs mt-2 px-2 py-1 rounded bg-purple-100 ${isCompOff ? 'text-purple-700' : 'text-red-700'}`}>
+                                  <div className="font-semibold">{daySchedules[0]?.start_time} - {daySchedules[0]?.end_time}</div>
+                                  <div className="text-xs">(Regular Shift Times)</div>
+                                </div>
+                              )}
                             </div>
                           )}
                           {!onLeave && daySchedules.map((sched) => (
@@ -911,40 +822,6 @@ const ScheduleManager = ({ departmentId, employees = [], roles = [] }) => {
           </div>
         </div>
       )}
-
-      {/* Constraint Violation Modal */}
-      <Modal
-        isOpen={showConstraintViolation}
-        onClose={() => setShowConstraintViolation(false)}
-        title="⚠️ Schedule Constraint Violation"
-      >
-        <div className="space-y-4">
-          <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded">
-            <h3 className="font-bold text-red-800 text-lg mb-2">{violationMessage}</h3>
-            <p className="text-red-700">{violationDetails}</p>
-          </div>
-          
-          <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
-            <p className="text-sm text-blue-700">
-              <strong>Scheduling Constraints:</strong>
-            </p>
-            <ul className="text-sm text-blue-700 mt-2 space-y-1 ml-4">
-              <li>✓ Maximum 5 days per week</li>
-              <li>✓ No duplicate schedules on same day</li>
-              <li>✓ Respects approved leaves and comp-off</li>
-            </ul>
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-2 mt-6">
-          <button
-            onClick={() => setShowConstraintViolation(false)}
-            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-bold"
-          >
-            Understood
-          </button>
-        </div>
-      </Modal>
     </div>
   );
 };
