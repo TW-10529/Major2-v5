@@ -156,7 +156,7 @@ const OvertimeRequest = () => {
               : 'bg-blue-600 text-white hover:bg-blue-700'
           }`}
         >
-          {showForm ? 'Cancel' : '+ New Request'}
+          {showForm ? t('cancel') : '+ New Request'}
         </button>
       </div>
 

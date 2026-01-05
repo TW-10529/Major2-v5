@@ -9,6 +9,7 @@ import Modal from '../components/common/Modal';
 import CheckInOut from '../components/CheckInOut';
 import OvertimeRequest from '../components/OvertimeRequest';
 import CompOffManagement from '../components/CompOffManagement';
+import { useLanguage } from '../context/LanguageContext';
 import api, {
   listLeaveRequests,
   listEmployees,
@@ -30,6 +31,7 @@ import {
 // =============== EMPLOYEE PAGES ===============
 
 const EmployeeDashboardHome = ({ user }) => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [todaySchedule, setTodaySchedule] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -61,14 +63,14 @@ const EmployeeDashboardHome = ({ user }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-xl text-gray-500">Loading...</div>
+        <div className="text-xl text-gray-500">{t('loading')}</div>
       </div>
     );
   }
 
   return (
     <div>
-      <Header title="Employee Dashboard" subtitle={`Welcome back, ${user.full_name}`} />
+      <Header title={t('employeeDashboard')} subtitle={`${t('welcomeBack')}, ${user.full_name}`} />
       <div className="p-6">
         <div className="mb-6 flex justify-end">
           <Button 
@@ -78,7 +80,7 @@ const EmployeeDashboardHome = ({ user }) => {
             className="flex items-center gap-2"
           >
             <RefreshCw className="w-4 h-4" />
-            Refresh
+            {t('refresh')}
           </Button>
         </div>
         {/* Paid Leave Notification */}
@@ -87,22 +89,22 @@ const EmployeeDashboardHome = ({ user }) => {
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="font-semibold text-blue-900">Paid Leave Status</p>
+                <p className="font-semibold text-blue-900">{t('paidLeaveStatus')}</p>
                 <p className="text-sm text-blue-700 mt-1">
-                  You have taken <strong>{leaveStats.taken_paid_leave}</strong> day{leaveStats.taken_paid_leave > 1 ? 's' : ''} of paid leave. You have <strong>{leaveStats.available_paid_leave}</strong> day{leaveStats.available_paid_leave > 1 ? 's' : ''} paid leave available.
+                  {t('youHaveTaken')} <strong>{leaveStats.taken_paid_leave}</strong> {leaveStats.taken_paid_leave > 1 ? t('daysOfPaidLeaveAvailable') : t('dayOfPaidLeave')} {t('youHave')} <strong>{leaveStats.available_paid_leave}</strong> {t('daysOfPaidLeaveAvailable')}.
                 </p>
               </div>
             </div>
           </div>
         )}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          <Card title={`Today's Schedule - ${format(new Date(), 'MMM dd, yyyy')}`}>
+          <Card title={`${t('todaysSchedule')}${format(new Date(), 'MMM dd, yyyy')}`}>
             {todaySchedule ? (
               <div className="space-y-4">
                 {todaySchedule.status !== 'comp_off_taken' && (
                   <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
                     <div>
-                      <p className="text-sm text-gray-600">Shift Time</p>
+                      <p className="text-sm text-gray-600">{t('shiftTime')}</p>
                       <p className="text-lg font-semibold text-blue-900">
                         {todaySchedule.start_time} - {todaySchedule.end_time}
                       </p>
@@ -113,13 +115,13 @@ const EmployeeDashboardHome = ({ user }) => {
                 {todaySchedule.status === 'comp_off_taken' && (
                   <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
                     <div>
-                      <p className="text-sm text-gray-600">Status</p>
+                      <p className="text-sm text-gray-600">{t('status')}</p>
                       <p className="text-lg font-semibold text-purple-900">
-                        Full Day Comp-Off
+                        {t('fullDayCompOff')}
                       </p>
                       {todaySchedule.start_time && todaySchedule.end_time && (
                         <p className="text-xs text-purple-600 mt-2">
-                          Regular Shift: {todaySchedule.start_time} - {todaySchedule.end_time}
+                          {t('regularShift')}: {todaySchedule.start_time} - {todaySchedule.end_time}
                         </p>
                       )}
                     </div>
@@ -130,39 +132,39 @@ const EmployeeDashboardHome = ({ user }) => {
             ) : (
               <div className="text-center py-8">
                 <CalendarDays className="w-12 h-12 mx-auto text-gray-400 mb-3" />
-                <p className="text-gray-500">No shift scheduled for today</p>
-                <p className="text-sm text-gray-400 mt-1">Enjoy your day off!</p>
+                <p className="text-gray-500">{t('noShiftScheduledForToday')}</p>
+                <p className="text-sm text-gray-400 mt-1">{t('enjoyYourDayOff')}</p>
               </div>
             )}
           </Card>
           <CheckInOut />
-          <Card title="Quick Access">
+          <Card title={t('quickAccess')}>
             <div className="space-y-3">
               <Button variant="outline" fullWidth className="justify-start" onClick={() => navigate('/schedule')}>
                 <CalendarDays className="w-5 h-5 mr-3" />
-                View My Schedule
+                {t('viewMySchedule')}
               </Button>
               <Button variant="outline" fullWidth className="justify-start" onClick={() => navigate('/requests')}>
                 <Clock className="w-5 h-5 mr-3" />
-                Request Leave
+                {t('requestLeave')}
               </Button>
               <Button variant="outline" fullWidth className="justify-start" onClick={() => navigate('/messages')}>
                 <MessageSquare className="w-5 h-5 mr-3" />
-                Messages
+                {t('messages')}
               </Button>
               <Button variant="outline" fullWidth className="justify-start" onClick={() => navigate('/attendance')}>
                 <UserCheck className="w-5 h-5 mr-3" />
-                View Attendance History
+                {t('viewAttendanceHistory')}
               </Button>
             </div>
           </Card>
         </div>
-        <Card title="Important Information">
+        <Card title={t('importantInformation')}>
           <div className="space-y-2 text-sm text-gray-600">
-            <p>• Remember to check in when you arrive for your shift</p>
-            <p>• Check your schedule regularly for any updates</p>
-            <p>• Submit leave requests in advance</p>
-            <p>• Contact your manager if you have any questions</p>
+            <p>• {t('rememberToCheckIn')}</p>
+            <p>• {t('checkScheduleRegularly')}</p>
+            <p>• {t('submitLeaveRequestsInAdvance')}</p>
+            <p>• {t('contactManagerIfQuestions')}</p>
           </div>
         </Card>
       </div>
@@ -171,6 +173,7 @@ const EmployeeDashboardHome = ({ user }) => {
 };
 
 const EmployeeCheckIn = ({ user }) => {
+  const { t } = useLanguage();
   const [todaySchedule, setTodaySchedule] = useState(null);
   const [checkedIn, setCheckedIn] = useState(false);
   const [checkInTime, setCheckInTime] = useState(null);
@@ -204,11 +207,11 @@ const EmployeeCheckIn = ({ user }) => {
       await checkIn(location);
       setCheckedIn(true);
       setCheckInTime(new Date());
-      setMessage({ type: 'success', text: 'Successfully checked in!' });
+      setMessage({ type: 'success', text: t('successfullyCheckedIn') });
     } catch (error) {
       setMessage({
         type: 'error',
-        text: error.response?.data?.detail || 'Failed to check in. Please try again.'
+        text: error.response?.data?.detail || t('failedToCheckIn')
       });
     }
   };
@@ -218,7 +221,7 @@ const EmployeeCheckIn = ({ user }) => {
     try {
       await checkOut(notes);
       setCheckedIn(false);
-      setMessage({ type: 'success', text: 'Successfully checked out!' });
+      setMessage({ type: 'success', text: t('successfullyCheckedOut') });
       setTimeout(() => {
         setCheckInTime(null);
         setNotes('');
@@ -226,23 +229,23 @@ const EmployeeCheckIn = ({ user }) => {
     } catch (error) {
       setMessage({
         type: 'error',
-        text: error.response?.data?.detail || 'Failed to check out. Please try again.'
+        text: error.response?.data?.detail || t('failedToCheckOut')
       });
     }
   };
 
-  if (loading) return <div className="p-6">Loading...</div>;
+  if (loading) return <div className="p-6">{t('loading')}</div>;
 
   if (!todaySchedule) {
     return (
       <div>
-        <Header title="Check In/Out" subtitle="Record your attendance" />
+        <Header title={t('checkInOut')} subtitle={t('recordYourAttendance')} />
         <div className="p-6">
           <Card>
             <div className="text-center py-12">
               <Clock className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-500 text-lg">No shift scheduled for today</p>
-              <p className="text-sm text-gray-400 mt-2">You don't need to check in today</p>
+              <p className="text-gray-500 text-lg">{t('noShiftScheduledForToday')}</p>
+              <p className="text-sm text-gray-400 mt-2">{t('youDontNeedToCheckInToday')}</p>
             </div>
           </Card>
         </div>
@@ -252,7 +255,7 @@ const EmployeeCheckIn = ({ user }) => {
 
   return (
     <div>
-      <Header title="Check In/Out" subtitle="Record your attendance" />
+      <Header title={t('checkInOut')} subtitle={t('recordYourAttendance')} />
       <div className="p-6">
         {message.text && (
           <div className={`mb-6 p-4 rounded-lg flex items-start ${
@@ -273,7 +276,7 @@ const EmployeeCheckIn = ({ user }) => {
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
                 <div>
-                  <p className="text-sm text-gray-600">Scheduled Time</p>
+                  <p className="text-sm text-gray-600">{t('attendanceScheduledTime')}</p>
                   <p className="text-lg font-semibold text-blue-900">
                     {todaySchedule.start_time} - {todaySchedule.end_time}
                   </p>
@@ -283,7 +286,7 @@ const EmployeeCheckIn = ({ user }) => {
               {checkedIn && checkInTime && (
                 <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
                   <div>
-                    <p className="text-sm text-gray-600">Checked In At</p>
+                    <p className="text-sm text-gray-600">{t('attendanceCheckIn')}</p>
                     <p className="text-lg font-semibold text-green-900">
                       {format(checkInTime, 'HH:mm:ss')}
                     </p>
@@ -293,7 +296,7 @@ const EmployeeCheckIn = ({ user }) => {
               )}
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <div>
-                  <p className="text-sm text-gray-600">Current Time</p>
+                  <p className="text-sm text-gray-600">{t('currentTime')}</p>
                   <p className="text-lg font-semibold text-gray-900">
                     {format(new Date(), 'HH:mm:ss')}
                   </p>
@@ -302,21 +305,21 @@ const EmployeeCheckIn = ({ user }) => {
               </div>
             </div>
           </Card>
-          <Card title={checkedIn ? 'Check Out' : 'Check In'}>
+          <Card title={checkedIn ? t('checkOut') : t('checkIn')}>
             {!checkedIn ? (
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Location
+                    {t('location')}
                   </label>
                   <select
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                   >
-                    <option value="Office">Office</option>
-                    <option value="Remote">Remote</option>
-                    <option value="Client Site">Client Site</option>
+                    <option value="Office">{t('office')}</option>
+                    <option value="Remote">{t('remote')}</option>
+                    <option value="Client Site">{t('clientSite')}</option>
                   </select>
                 </div>
                 <Button variant="success" fullWidth className="h-14 text-lg" onClick={handleCheckIn}>
@@ -331,9 +334,9 @@ const EmployeeCheckIn = ({ user }) => {
               <div className="space-y-4">
                 <div className="p-4 bg-green-50 rounded-lg text-center">
                   <CheckCircle className="w-12 h-12 mx-auto text-green-600 mb-2" />
-                  <p className="text-green-800 font-semibold">You are checked in</p>
+                  <p className="text-green-800 font-semibold">{t('youAreCheckedIn')}</p>
                   <p className="text-sm text-green-600 mt-1">
-                    Since {checkInTime && format(checkInTime, 'HH:mm:ss')}
+                    {t('since')} {checkInTime && format(checkInTime, 'HH:mm:ss')}
                   </p>
                 </div>
                 <div>
@@ -359,12 +362,12 @@ const EmployeeCheckIn = ({ user }) => {
             )}
           </Card>
         </div>
-        <Card title="Tips" className="mt-6">
+        <Card title={t('tips')} className="mt-6">
           <ul className="space-y-2 text-sm text-gray-600">
-            <li>• Check in when you arrive at your scheduled shift</li>
-            <li>• Make sure to check out when you leave</li>
-            <li>• Late check-ins may be flagged for review</li>
-            <li>• Contact your manager if you have any issues</li>
+            <li>• {t('checkInWhenArrive')}</li>
+            <li>• {t('makeSureToCheckOut')}</li>
+            <li>• {t('lateCheckInsFlagged')}</li>
+            <li>• {t('contactManagerCheckInIssues')}</li>
           </ul>
         </Card>
       </div>
@@ -373,6 +376,7 @@ const EmployeeCheckIn = ({ user }) => {
 };
 
 const EmployeeSchedule = () => {
+  const { t } = useLanguage();
   const [schedules, setSchedules] = useState([]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [loading, setLoading] = useState(true);
@@ -397,11 +401,11 @@ const EmployeeSchedule = () => {
     }
   };
 
-  if (loading) return <div className="p-6">Loading...</div>;
+  if (loading) return <div className="p-6">{t('loading')}</div>;
 
   return (
     <div>
-      <Header title="My Schedule" subtitle="View your upcoming shifts" />
+      <Header title={t('mySchedule')} subtitle={t('viewYourUpcomingShifts')} />
       <div className="p-6">
         <Card>
           <div className="flex items-center justify-between mb-6">
@@ -429,8 +433,8 @@ const EmployeeSchedule = () => {
           {schedules.length === 0 ? (
             <div className="text-center py-12">
               <Calendar className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-500">No shifts scheduled for this month</p>
-              <p className="text-sm text-gray-400 mt-2">Check back later for updates</p>
+              <p className="text-gray-500">{t('noShiftsScheduledForMonth')}</p>
+              <p className="text-sm text-gray-400 mt-2">{t('checkBackLaterUpdates')}</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -458,17 +462,17 @@ const EmployeeSchedule = () => {
                 const getStatusLabel = (status) => {
                   switch (status) {
                     case 'scheduled':
-                      return 'Scheduled';
+                      return t('scheduled');
                     case 'leave':
-                      return 'Leave (Full Day)';
+                      return t('leaveFullDay');
                     case 'leave_half_morning':
-                      return 'Leave (Half - Morning)';
+                      return t('leaveHalfMorning');
                     case 'leave_half_afternoon':
-                      return 'Leave (Half - Afternoon)';
+                      return t('leaveHalfAfternoon');
                     case 'comp_off_earned':
-                      return 'Comp-Off Earned';
+                      return t('compOffEarned');
                     case 'comp_off_taken':
-                      return 'Comp-Off Taken';
+                      return t('compOffTaken');
                     default:
                       return status;
                   }
@@ -510,12 +514,12 @@ const EmployeeSchedule = () => {
             </div>
           )}
         </Card>
-        <Card title="Schedule Information" className="mt-6">
+        <Card title={t('scheduleInformation')} className="mt-6">
           <div className="space-y-2 text-sm text-gray-600">
-            <p>• Your schedule is updated regularly by your manager</p>
-            <p>• Make sure to check in on time for your shifts</p>
-            <p>• If you can't make a shift, request leave in advance</p>
-            <p>• Contact your manager if you have questions about your schedule</p>
+            <p>• {t('yourScheduleUpdatedRegularly')}</p>
+            <p>• {t('makeSureCheckInOnTime')}</p>
+            <p>• {t('ifCantMakeShift')}</p>
+            <p>• {t('contactManagerScheduleQuestions')}</p>
           </div>
         </Card>
       </div>
@@ -524,6 +528,7 @@ const EmployeeSchedule = () => {
 };
 
 const EmployeeLeaves = ({ user }) => {
+  const { t } = useLanguage();
   const [leaves, setLeaves] = useState([]);
   const [leaveStats, setLeaveStats] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -655,21 +660,21 @@ const EmployeeLeaves = ({ user }) => {
     );
   };
 
-  if (loading) return <div className="p-6">Loading...</div>;
+  if (loading) return <div className="p-6">{t('loading')}</div>;
 
   const pendingCount = leaves.filter(l => l.status === 'pending').length;
   const approvedCount = leaves.filter(l => l.status === 'approved').length;
 
   return (
     <div>
-      <Header title="Leave Requests" subtitle="Request and manage your time off" />
+      <Header title={t('leaveRequests')} subtitle={t('requestAndManageTimeOff')} />
       <div className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <Card padding={false}>
             <div className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Pending</p>
+                  <p className="text-sm text-gray-500 mb-1">{t('pendingLeaveRequests')}</p>
                   <p className="text-3xl font-bold text-yellow-600">{pendingCount}</p>
                 </div>
                 <Clock className="w-8 h-8 text-yellow-600" />
@@ -680,7 +685,7 @@ const EmployeeLeaves = ({ user }) => {
             <div className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Approved</p>
+                  <p className="text-sm text-gray-500 mb-1">{t('approvedLeaveRequests')}</p>
                   <p className="text-3xl font-bold text-green-600">{approvedCount}</p>
                 </div>
                 <CheckCircle className="w-8 h-8 text-green-600" />
@@ -691,7 +696,7 @@ const EmployeeLeaves = ({ user }) => {
             <div className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Total Requests</p>
+                  <p className="text-sm text-gray-500 mb-1">{t('totalLeaveRequests')}</p>
                   <p className="text-3xl font-bold text-blue-600">{leaves.length}</p>
                 </div>
                 <AlertCircle className="w-8 h-8 text-blue-600" />
@@ -706,7 +711,7 @@ const EmployeeLeaves = ({ user }) => {
               <div className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-500 mb-1">Total Paid Leave</p>
+                    <p className="text-sm text-gray-500 mb-1">{t('totalPaidLeaveAmount')}</p>
                     <p className="text-3xl font-bold text-purple-600">{leaveStats.total_paid_leave || 0}</p>
                   </div>
                   <Calendar className="w-8 h-8 text-purple-600" />
@@ -717,7 +722,7 @@ const EmployeeLeaves = ({ user }) => {
               <div className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-500 mb-1">Taken Paid Leave</p>
+                    <p className="text-sm text-gray-500 mb-1">{t('takenPaidLeaveAmount')}</p>
                     <p className="text-3xl font-bold text-orange-600">{leaveStats.taken_paid_leave || 0}</p>
                   </div>
                   <CheckCircle className="w-8 h-8 text-orange-600" />
@@ -728,7 +733,7 @@ const EmployeeLeaves = ({ user }) => {
               <div className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-500 mb-1">Available Paid Leave</p>
+                    <p className="text-sm text-gray-500 mb-1">{t('availablePaidLeaveAmount')}</p>
                     <p className="text-3xl font-bold text-green-600">{leaveStats.available_paid_leave || 0}</p>
                   </div>
                   <CheckCircle className="w-8 h-8 text-green-600" />
@@ -739,7 +744,7 @@ const EmployeeLeaves = ({ user }) => {
               <div className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-500 mb-1">Usage %</p>
+                    <p className="text-sm text-gray-500 mb-1">{t('usagePercentage')}</p>
                     <p className="text-3xl font-bold text-blue-600">
                       {leaveStats.total_paid_leave > 0 
                         ? Math.round((leaveStats.taken_paid_leave / leaveStats.total_paid_leave) * 100)
@@ -753,7 +758,7 @@ const EmployeeLeaves = ({ user }) => {
           </div>
         )}
         <Card
-          title="My Leave Requests"
+          title={t('myLeaveRequests')}
           subtitle={`${leaves.length} total requests`}
           headerAction={
             <Button onClick={() => setShowModal(true)}>
@@ -765,8 +770,8 @@ const EmployeeLeaves = ({ user }) => {
           {leaves.length === 0 ? (
             <div className="text-center py-12">
               <Clock className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-500">No leave requests yet</p>
-              <p className="text-sm text-gray-400 mt-2">Create your first request to get started</p>
+              <p className="text-gray-500">{t('noLeaveRequestsYet')}</p>
+              <p className="text-sm text-gray-400 mt-2">{t('createFirstLeaveRequest')}</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -787,7 +792,7 @@ const EmployeeLeaves = ({ user }) => {
                       <p className="text-sm text-gray-700">{leave.reason}</p>
                       {leave.review_notes && (
                         <div className="mt-2 p-2 bg-gray-50 rounded">
-                          <p className="text-xs text-gray-500">Manager's Note:</p>
+                          <p className="text-xs text-gray-500">{t('managersNote')}:</p>
                           <p className="text-sm text-gray-700">{leave.review_notes}</p>
                         </div>
                       )}
@@ -801,14 +806,14 @@ const EmployeeLeaves = ({ user }) => {
         <Modal
           isOpen={showModal}
           onClose={() => setShowModal(false)}
-          title="Request Leave"
+          title={t('requestLeaveModal')}
           footer={
             <div className="flex justify-end space-x-3">
               <Button variant="outline" onClick={() => setShowModal(false)}>
-                Cancel
+                {t('cancel')}
               </Button>
               <Button onClick={handleSubmit}>
-                Submit Request
+                {t('submitRequest')}
               </Button>
             </div>
           }
@@ -823,7 +828,7 @@ const EmployeeLeaves = ({ user }) => {
             {/* Leave Type and Duration Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-4 border-b border-gray-200">
               <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-2">📋 Leave Type</label>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">📋 {t('leaveTypeLabel')}</label>
                 <select
                   value={formData.leave_type}
                   onChange={(e) => setFormData({ ...formData, leave_type: e.target.value })}
@@ -831,28 +836,28 @@ const EmployeeLeaves = ({ user }) => {
                   required
                 >
                   {leaveStats?.available_paid_leave > 0 && (
-                    <option value="paid">✓ Paid Leave ({leaveStats.available_paid_leave} days)</option>
+                    <option value="paid">{t('paidLeaveWithDays').replace('{0}', leaveStats.available_paid_leave)}</option>
                   )}
-                  <option value="unpaid">⊘ Unpaid Leave</option>
+                  <option value="unpaid">{t('unpaidLeaveLabel')}</option>
                   {leaveStats?.comp_off_available > 0 && (
-                    <option value="comp_off">♻ Comp-off (Available: {leaveStats.comp_off_available})</option>
+                    <option value="comp_off">{t('compOffLabel').replace('{0}', leaveStats.comp_off_available)}</option>
                   )}
                 </select>
-                <p className="text-xs text-gray-500 mt-1">Select the type of leave you are requesting</p>
+                <p className="text-xs text-gray-500 mt-1">{t('selectLeaveType')}</p>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-2">⏰ Duration Type</label>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">⏰ {t('durationTypeLabel')}</label>
                 <select
                   value={formData.duration_type}
                   onChange={(e) => setFormData({ ...formData, duration_type: e.target.value })}
                   className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-medium"
                   required
                 >
-                  <option value="full_day">Full Day (Entire Day)</option>
-                  <option value="half_day_morning">Half Day - Morning Only</option>
-                  <option value="half_day_afternoon">Half Day - Afternoon Only</option>
+                  <option value="full_day">{t('fullDayEntireDay')}</option>
+                  <option value="half_day_morning">{t('halfDayMorning')}</option>
+                  <option value="half_day_afternoon">{t('halfDayAfternoon')}</option>
                 </select>
-                <p className="text-xs text-gray-500 mt-1">Choose if this is a full or half day</p>
+                <p className="text-xs text-gray-500 mt-1">{t('chooseFullOrHalfDay')}</p>
               </div>
             </div>
 
@@ -900,10 +905,10 @@ const EmployeeLeaves = ({ user }) => {
             {formData.leave_type && formData.duration_type && formData.start_date && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <p className="text-sm text-gray-700">
-                  <strong>Request Summary:</strong> {formData.duration_type.startsWith('half_day') ? 'Half Day' : 'Full Day'} {formData.leave_type} leave 
+                  {t('requestSummaryLabel')} {formData.duration_type.startsWith('half_day') ? t('halfDay') : t('fullDayEntireDay')} {formData.leave_type} leave 
                   on {new Date(formData.start_date).toLocaleDateString()}
-                  {formData.duration_type === 'half_day_morning' && ' (Morning)'}
-                  {formData.duration_type === 'half_day_afternoon' && ' (Afternoon)'}
+                  {formData.duration_type === 'half_day_morning' && ` (${t('morningLabel')})`}
+                  {formData.duration_type === 'half_day_afternoon' && ` (${t('afternoonLabel')})`}
                 </p>
               </div>
             )}
@@ -915,6 +920,7 @@ const EmployeeLeaves = ({ user }) => {
 };
 
 const EmployeeAttendance = () => {
+  const { t } = useLanguage();
   const [attendance, setAttendance] = useState([]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [loading, setLoading] = useState(true);
@@ -980,24 +986,24 @@ const EmployeeAttendance = () => {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Download failed:', error);
-      alert('Failed to download report');
+      alert(t('failedToDownloadReport'));
     } finally {
       setDownloading(false);
     }
   };
 
-  if (loading) return <div className="p-6">Loading...</div>;
+  if (loading) return <div className="p-6">{t('loading')}</div>;
 
   return (
     <div>
-      <Header title="My Attendance" subtitle="View your attendance history" />
+      <Header title={t('myAttendance')} subtitle={t('viewAttendanceHistory')} />
       <div className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <Card padding={false}>
             <div className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">On Time</p>
+                  <p className="text-sm text-gray-500 mb-1">{t('attendanceOnTime')}</p>
                   <p className="text-3xl font-bold text-green-600">{stats.present}</p>
                 </div>
                 <CheckCircle className="w-8 h-8 text-green-600" />
@@ -1008,7 +1014,7 @@ const EmployeeAttendance = () => {
             <div className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Late</p>
+                  <p className="text-sm text-gray-500 mb-1">{t('attendanceLate')}</p>
                   <p className="text-3xl font-bold text-yellow-600">{stats.late}</p>
                 </div>
                 <Clock className="w-8 h-8 text-yellow-600" />
@@ -1019,7 +1025,7 @@ const EmployeeAttendance = () => {
             <div className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Absent</p>
+                  <p className="text-sm text-gray-500 mb-1">{t('attendanceAbsent')}</p>
                   <p className="text-3xl font-bold text-red-600">{stats.absent}</p>
                 </div>
                 <XCircle className="w-8 h-8 text-red-600" />
@@ -1047,7 +1053,7 @@ const EmployeeAttendance = () => {
               className="flex items-center space-x-2"
             >
               <Download className="w-4 h-4" />
-              <span>{downloading ? 'Downloading...' : 'Download Report'}</span>
+              <span>{downloading ? t('downloading') : t('downloadReport')}</span>
             </Button>
           </div>
 
@@ -1055,25 +1061,25 @@ const EmployeeAttendance = () => {
           {attendance.length > 0 && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
               <div>
-                <p className="text-xs text-gray-600 mb-1">Total Hours</p>
+                <p className="text-xs text-gray-600 mb-1">{t('totalHoursWorked')}</p>
                 <p className="text-lg font-bold text-blue-600">
                   {(attendance.reduce((sum, r) => sum + (r.worked_hours || 0), 0)).toFixed(2)}h
                 </p>
               </div>
               <div>
-                <p className="text-xs text-gray-600 mb-1">Night Hours (22:00+)</p>
+                <p className="text-xs text-gray-600 mb-1">{t('attendanceNightHours')}</p>
                 <p className="text-lg font-bold text-purple-600">
                   {(attendance.reduce((sum, r) => sum + (r.night_hours || 0), 0)).toFixed(2)}h
                 </p>
               </div>
               <div>
-                <p className="text-xs text-gray-600 mb-1">Overtime Hours</p>
+                <p className="text-xs text-gray-600 mb-1">{t('overtimeHoursLabel')}</p>
                 <p className="text-lg font-bold text-orange-600">
                   {(attendance.reduce((sum, r) => sum + (r.overtime_hours || 0), 0)).toFixed(2)}h
                 </p>
               </div>
               <div>
-                <p className="text-xs text-gray-600 mb-1">Days Worked</p>
+                <p className="text-xs text-gray-600 mb-1">{t('attendanceDaysWorked')}</p>
                 <p className="text-lg font-bold text-green-600">
                   {attendance.filter(r => r.in_time).length}
                 </p>
@@ -1084,22 +1090,22 @@ const EmployeeAttendance = () => {
           {attendance.length === 0 ? (
             <div className="text-center py-12">
               <Clock className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-500">No attendance records for this month</p>
+              <p className="text-gray-500">{t('noAttendanceRecordsForMonth')}</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Scheduled Time</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Check-In</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Check-Out</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hours Worked</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Night Hours</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Break (min)</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">OT Hours</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('attendanceDate')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('attendanceScheduledTime')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('attendanceCheckIn')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('attendanceCheckOut')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('attendanceHoursWorked')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('attendanceNightHours')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('attendanceBreak')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('attendanceOTHours')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('attendanceStatus')}</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -1136,7 +1142,7 @@ const EmployeeAttendance = () => {
                           record.status === 'late' ? 'bg-orange-100 text-orange-800' :
                           'bg-blue-100 text-blue-800'
                         }`}>
-                          {record.status || 'Scheduled'}
+                          {record.status || t('scheduled')}
                         </span>
                       </td>
                     </tr>
@@ -1160,6 +1166,7 @@ const EmployeeAttendance = () => {
 };
 
 const EmployeeMessages = () => {
+  const { t } = useLanguage();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -1184,7 +1191,7 @@ const EmployeeMessages = () => {
         await deleteMessage(id);
         loadMessages();
       } catch (error) {
-        alert('Failed to delete message');
+        alert(t('failedToDeleteMessage'));
       }
     }
   };
@@ -1196,17 +1203,17 @@ const EmployeeMessages = () => {
       }
       loadMessages();
     } catch (error) {
-      alert('Failed to update message status');
+      alert(t('failedToUpdateMessageStatus'));
     }
   };
 
-  if (loading) return <div className="p-6">Loading...</div>;
+  if (loading) return <div className="p-6">{t('loading')}</div>;
 
   const unreadCount = messages.filter(m => !m.is_read).length;
 
   return (
     <div>
-      <Header title="Messages" subtitle="Messages from your manager" />
+      <Header title={t('messages')} subtitle={t('messagesFromManager')} />
       <div className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <Card padding={false}>
@@ -1232,12 +1239,12 @@ const EmployeeMessages = () => {
             </div>
           </Card>
         </div>
-        <Card title="All Messages" subtitle={`${messages.length} total messages`}>
+        <Card title={t('messages')} subtitle={`${messages.length} ${t('totalMessages')}`}>
           {messages.length === 0 ? (
             <div className="text-center py-12">
               <Mail className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-500">No messages yet</p>
-              <p className="text-sm text-gray-400 mt-2">Messages from your manager will appear here</p>
+              <p className="text-gray-500">{t('noMessagesYet')}</p>
+              <p className="text-sm text-gray-400 mt-2">{t('messagesFromManager')}</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -1255,13 +1262,13 @@ const EmployeeMessages = () => {
                       <div className="flex items-center space-x-2 mb-1">
                         {!msg.is_read && (
                           <span className="px-2 py-1 rounded text-xs font-medium bg-yellow-200 text-yellow-800">
-                            Unread
+                            {t('unread')}
                           </span>
                         )}
                         <h4 className="font-semibold text-gray-900">{msg.subject}</h4>
                       </div>
                       <p className="text-sm text-gray-600 mt-1">
-                        From: {msg.department_id ? 'Department Manager' : 'Manager'}
+                        {t('from')}: {msg.department_id ? t('departmentManager') : t('manager')}
                       </p>
                     </div>
                     <div className="flex items-center space-x-2 ml-4">
@@ -1300,6 +1307,7 @@ const EmployeeMessages = () => {
 // =============== EMPLOYEE REQUESTS COMPONENT ===============
 
 const EmployeeRequests = ({ user }) => {
+  const { t } = useLanguage();
   const [requests, setRequests] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -1396,13 +1404,13 @@ const EmployeeRequests = ({ user }) => {
   const approvedRequests = requests.filter(r => r.status === 'approved');
   const rejectedRequests = requests.filter(r => r.status === 'rejected');
 
-  if (loading) return <div className="p-6">Loading...</div>;
+  if (loading) return <div className="p-6">{t('loading')}</div>;
 
   return (
     <div className="min-h-screen bg-gray-100">
       <Header 
-        title="Requests & Approvals" 
-        subtitle="Manage your leave and overtime requests"
+        title={t('requestsApprovals')} 
+        subtitle={t('manageYourLeaveAndOvertimeRequests')}
       />
       
       <div className="p-6">
@@ -1422,12 +1430,12 @@ const EmployeeRequests = ({ user }) => {
 
         {/* Pending Requests */}
         <Card 
-          title="Pending Requests" 
-          subtitle={pendingRequests.length === 0 ? 'No pending requests' : ''}
+          title={t('pendingRequests')} 
+          subtitle={pendingRequests.length === 0 ? t('noPendingRequests') : ''}
           action={
             <Button onClick={() => setShowModal(true)} size="sm">
               <Plus className="w-4 h-4 mr-2" />
-              New Request
+              {t('newRequest')}
             </Button>
           }
         >
@@ -1465,7 +1473,7 @@ const EmployeeRequests = ({ user }) => {
 
         {/* Approved Requests */}
         {approvedRequests.length > 0 && (
-          <Card title="Approved Requests" className="mt-6">
+          <Card title={t('approvedRequests')} className="mt-6">
             <div className="space-y-3">
               {approvedRequests.map((req) => (
                 <div key={req.id} className="p-4 border border-green-200 bg-green-50 rounded-lg">
@@ -1499,7 +1507,7 @@ const EmployeeRequests = ({ user }) => {
 
         {/* Rejected Requests */}
         {rejectedRequests.length > 0 && (
-          <Card title="Rejected Requests" className="mt-6">
+          <Card title={t('rejectedRequests')} className="mt-6">
             <div className="space-y-3">
               {rejectedRequests.map((req) => (
                 <div key={req.id} className="p-4 border border-red-200 bg-red-50 rounded-lg">
@@ -1535,53 +1543,53 @@ const EmployeeRequests = ({ user }) => {
         <Modal
           isOpen={showModal}
           onClose={() => setShowModal(false)}
-          title="Submit Leave Request"
+          title={t('submitLeaveRequest')}
           footer={
             <div className="flex justify-end space-x-3">
               <Button variant="outline" onClick={() => setShowModal(false)}>
-                Cancel
+                {t('cancel')}
               </Button>
-              <Button onClick={handleSubmit}>
-                Submit Request
+              <Button type="submit" form="leaveRequestForm">
+                {t('submitRequest')}
               </Button>
             </div>
           }
         >
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} id="leaveRequestForm" className="space-y-6">
             {/* Leave Type and Duration Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-4 border-b border-gray-200">
               <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-2">📋 Leave Type</label>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">📋 {t('leaveTypeLabel')}</label>
                 <select
                   value={formData.leave_type}
                   onChange={(e) => setFormData({ ...formData, leave_type: e.target.value })}
                   className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-medium"
                 >
-                  <option value="paid">✓ Paid Leave</option>
-                  <option value="unpaid">⊘ Unpaid Leave</option>
-                  {compOffBalance > 0 && <option value="comp_off">♻ Comp-off (Available: {compOffBalance})</option>}
+                  <option value="paid">✓ {t('paidLeaveWithDays', { days: 'N/A' })}</option>
+                  <option value="unpaid">⊘ {t('unpaidLeaveLabel')}</option>
+                  {compOffBalance > 0 && <option value="comp_off">♻ {t('compOffLabel')} ({compOffBalance})</option>}
                 </select>
-                <p className="text-xs text-gray-500 mt-1">Select the type of leave you are requesting</p>
+                <p className="text-xs text-gray-500 mt-1">{t('selectLeaveType')}</p>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-2">⏰ Duration Type</label>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">⏰ {t('durationTypeLabel')}</label>
                 <select
                   value={formData.duration_type}
                   onChange={(e) => setFormData({ ...formData, duration_type: e.target.value })}
                   className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-medium"
                 >
-                  <option value="full_day">Full Day (Entire Day)</option>
-                  <option value="half_day_morning">Half Day - Morning Only</option>
-                  <option value="half_day_afternoon">Half Day - Afternoon Only</option>
+                  <option value="full_day">{t('fullDayEntireDay')}</option>
+                  <option value="half_day_morning">{t('halfDayMorning')}</option>
+                  <option value="half_day_afternoon">{t('halfDayAfternoon')}</option>
                 </select>
-                <p className="text-xs text-gray-500 mt-1">Choose if this is a full or half day</p>
+                <p className="text-xs text-gray-500 mt-1">{t('chooseFullOrHalfDay')}</p>
               </div>
             </div>
 
             {/* Date Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-4 border-b border-gray-200">
               <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-2">📅 Start Date</label>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">📅 {t('startDateLabel')}</label>
                 <input
                   type="date"
                   value={formData.start_date}
@@ -1622,10 +1630,10 @@ const EmployeeRequests = ({ user }) => {
             {formData.leave_type && formData.duration_type && formData.start_date && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <p className="text-sm text-gray-700">
-                  <strong>Request Summary:</strong> {formData.duration_type.startsWith('half_day') ? 'Half Day' : 'Full Day'} {formData.leave_type} leave 
+                  <strong>{t('requestSummaryLabel')}:</strong> {formData.duration_type.startsWith('half_day') ? t('halfDay') : t('fullDayEntireDay')} {formData.leave_type} leave 
                   on {new Date(formData.start_date).toLocaleDateString()}
-                  {formData.duration_type === 'half_day_morning' && ' (Morning)'}
-                  {formData.duration_type === 'half_day_afternoon' && ' (Afternoon)'}
+                  {formData.duration_type === 'half_day_morning' && ` (${t('morningLabel')})`}
+                  {formData.duration_type === 'half_day_afternoon' && ` (${t('afternoonLabel')})`}
                 </p>
               </div>
             )}
@@ -1639,9 +1647,10 @@ const EmployeeRequests = ({ user }) => {
 // =============== EMPLOYEE COMP-OFF COMPONENT ===============
 
 const EmployeeCompOff = ({ user }) => {
+  const { t } = useLanguage();
   return (
     <div>
-      <Header title="Comp-Off Management" subtitle="Apply and manage your comp-off balance" />
+      <Header title={t('compOffManagement')} subtitle={t('applyAndManageCompOff')} />
       <div className="p-6">
         <CompOffManagement currentUser={user} departmentId={null} />
       </div>

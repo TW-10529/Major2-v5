@@ -42,10 +42,15 @@ export const login = async (username, password) => {
   params.append('username', username);
   params.append('password', password);
 
-  const response = await api.post('/token', params, {
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-  });
-  return response.data;
+  try {
+    const response = await axios.post(`${API_URL}/token`, params, {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Login request failed:', error);
+    throw error;
+  }
 };
 
 // Admin - User Management

@@ -1,4 +1,5 @@
 import NotificationBell from './NotificationBell';
+import LanguageToggle from '../common/LanguageToggle';
 
 const Header = ({ title, subtitle, showNotifications = true }) => {
   return (
@@ -12,6 +13,7 @@ const Header = ({ title, subtitle, showNotifications = true }) => {
 
           {showNotifications && (
             <div className="flex items-center space-x-4">
+              <LanguageToggle />
               <NotificationBell />
             </div>
           )}

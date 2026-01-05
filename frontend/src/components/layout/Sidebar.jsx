@@ -13,37 +13,39 @@ import {
   Gift
 } from 'lucide-react';
 import NotificationBell from './NotificationBell';
+import { useLanguage } from '../../context/LanguageContext';
 
 const Sidebar = ({ user, onLogout }) => {
+  const { t } = useLanguage();
   const getNavItems = () => {
     if (user.user_type === 'admin') {
       return [
-        { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-        { path: '/managers', icon: UserCog, label: 'Managers' },
-        { path: '/departments', icon: Building2, label: 'Departments' },
+        { path: '/dashboard', icon: LayoutDashboard, label: t('dashboard') },
+        { path: '/managers', icon: UserCog, label: t('manageManagers') },
+        { path: '/departments', icon: Building2, label: t('manageDepartments') },
       ];
     } else if (user.user_type === 'manager') {
       return [
-        { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-        { path: '/employees', icon: Users, label: 'Employees' },
-        { path: '/schedules', icon: CalendarDays, label: 'Schedules' },
+        { path: '/dashboard', icon: LayoutDashboard, label: t('dashboard') },
+        { path: '/employees', icon: Users, label: t('manageEmployees') },
+        { path: '/schedules', icon: CalendarDays, label: t('scheduleManagement') },
         { path: '/roles', icon: ClipboardList, label: 'Role Management' },
         { path: '/overtime-approvals', icon: Clock, label: 'Overtime Approvals' },
-        { path: '/leaves', icon: UserCheck, label: 'Leave Requests' },
+        { path: '/leaves', icon: UserCheck, label: t('leaveManagement') },
         { path: '/comp-off', icon: Gift, label: 'Comp-Off Requests' },
-        { path: '/attendance', icon: Clock, label: 'Attendance' },
-        { path: '/messages', icon: MessageSquare, label: 'Messages' },
+        { path: '/attendance', icon: Clock, label: t('attendance') },
+        { path: '/messages', icon: MessageSquare, label: t('notifications') },
       ];
     } else {
       return [
-        { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-        { path: '/schedule', icon: CalendarDays, label: 'My Schedule' },
+        { path: '/dashboard', icon: LayoutDashboard, label: t('dashboard') },
+        { path: '/schedule', icon: CalendarDays, label: t('mySchedule') },
         { path: '/requests', icon: ClipboardList, label: 'Requests & Approvals' },
-        { path: '/overtime-requests', icon: Clock, label: 'Overtime Requests' },
-        { path: '/leaves', icon: UserCheck, label: 'Leave Requests' },
+        { path: '/overtime-requests', icon: Clock, label: t('overtimeRequest') },
+        { path: '/leaves', icon: UserCheck, label: t('leaveManagement') },
         { path: '/comp-off', icon: Gift, label: 'Comp-Off' },
-        { path: '/attendance', icon: Clock, label: 'My Attendance' },
-        { path: '/messages', icon: MessageSquare, label: 'Messages' },
+        { path: '/attendance', icon: Clock, label: t('myAttendance') },
+        { path: '/messages', icon: MessageSquare, label: t('notifications') },
       ];
     }
   };
@@ -55,7 +57,7 @@ const Sidebar = ({ user, onLogout }) => {
       {/* Logo */}
       <div className="p-6 border-b border-gray-700">
         <div className="flex items-center justify-between mb-2">
-          <h1 className="text-2xl font-bold">Shift Scheduler</h1>
+          <h1 className="text-2xl font-bold">{t('shiftScheduler')}</h1>
           <NotificationBell />
         </div>
         <p className="text-sm text-gray-400 mt-1 capitalize">{user.user_type} Portal</p>
@@ -92,7 +94,7 @@ const Sidebar = ({ user, onLogout }) => {
           className="flex items-center w-full px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition-colors"
         >
           <LogOut className="w-5 h-5 mr-3" />
-          <span>Logout</span>
+          <span>{t('logout')}</span>
         </button>
       </div>
     </div>

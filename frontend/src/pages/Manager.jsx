@@ -11,6 +11,7 @@ import RoleManagement from '../components/RoleManagement';
 import ScheduleManager from '../components/ScheduleManager';
 import OvertimeApproval from '../components/OvertimeApproval';
 import CompOffManagement from '../components/CompOffManagement';
+import { useLanguage } from '../context/LanguageContext';
 import api from '../services/api';
 import {
   listEmployees,
@@ -42,6 +43,7 @@ import {
 // =============== MANAGER PAGES ===============
 
 const ManagerDashboardHome = ({ user }) => {
+  const { t } = useLanguage();
   const [stats, setStats] = useState({
     totalEmployees: 0,
     pendingLeaves: 0,
@@ -76,10 +78,10 @@ const ManagerDashboardHome = ({ user }) => {
   };
 
   const statCards = [
-    { title: 'Total Employees', value: stats.totalEmployees, icon: Users, color: 'blue' },
-    { title: 'Pending Leaves', value: stats.pendingLeaves, icon: ClipboardList, color: 'yellow' },
-    { title: 'Active Employees', value: stats.activeEmployees, icon: UserCheck, color: 'green' },
-    { title: "Today's Schedule", value: stats.todayScheduled, icon: CalendarDays, color: 'purple' }
+    { title: t('totalEmployees'), value: stats.totalEmployees, icon: Users, color: 'blue' },
+    { title: t('pendingLeaves'), value: stats.pendingLeaves, icon: ClipboardList, color: 'yellow' },
+    { title: t('activeEmployees'), value: stats.activeEmployees, icon: UserCheck, color: 'green' },
+    { title: t('todaysSchedule'), value: stats.todayScheduled, icon: CalendarDays, color: 'purple' }
   ];
 
   if (loading) {
@@ -92,7 +94,7 @@ const ManagerDashboardHome = ({ user }) => {
 
   return (
     <div>
-      <Header title="Manager Dashboard" subtitle={`Welcome back, ${user.full_name}`} />
+      <Header title={t('dashboard')} subtitle={`Welcome back, ${user.full_name}`} />
       <div className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
           {statCards.map((stat, index) => (
@@ -112,28 +114,28 @@ const ManagerDashboardHome = ({ user }) => {
           ))}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card title="Department Overview">
+          <Card title={t('recentActivity')}>
             <div className="space-y-4">
               <p className="text-gray-600">
-                You are managing {stats.totalEmployees} employees in your department.
+                {t('youAreManaging')} {stats.totalEmployees} {t('employeesInDepartment')}.
               </p>
               <p className="text-gray-600">
                 {stats.pendingLeaves > 0 ? (
                   <span className="text-yellow-600 font-semibold">
-                    {stats.pendingLeaves} leave request{stats.pendingLeaves > 1 ? 's' : ''} pending review.
+                    {stats.pendingLeaves} {t('leaveRequest')}{stats.pendingLeaves > 1 ? 's' : ''} {t('pendingReview')}.
                   </span>
                 ) : (
-                  'No pending leave requests.'
+                  t('noPendingLeaveRequests')
                 )}
               </p>
             </div>
           </Card>
-          <Card title="Quick Tips">
+          <Card title={t('quickTips')}>
             <div className="space-y-2 text-sm text-gray-600">
-              <p>• Review and approve leave requests regularly</p>
-              <p>• Check daily attendance for your team</p>
-              <p>• Create schedules in advance</p>
-              <p>• Keep employee information up to date</p>
+              <p>• {t('reviewApproveLeaveRegularly')}</p>
+              <p>• {t('checkDailyAttendance')}</p>
+              <p>• {t('createSchedulesInAdvance')}</p>
+              <p>• {t('keepEmployeeInfoUpdated')}</p>
             </div>
           </Card>
         </div>
@@ -143,6 +145,7 @@ const ManagerDashboardHome = ({ user }) => {
 };
 
 const ManagerEmployees = ({ user }) => {
+  const { t } = useLanguage();
   const [employees, setEmployees] = useState([]);
   const [roles, setRoles] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -343,22 +346,22 @@ const ManagerEmployees = ({ user }) => {
   };
 
   const columns = [
-    { header: 'Employee ID', accessor: 'employee_id' },
-    { header: 'Name', render: (row) => `${row.first_name} ${row.last_name}` },
-    { header: 'Email', accessor: 'email' },
-    { header: 'Phone', accessor: 'phone' },
+    { header: t('employeeID'), accessor: 'employee_id' },
+    { header: t('firstName'), render: (row) => `${row.first_name} ${row.last_name}` },
+    { header: t('email'), accessor: 'email' },
+    { header: t('phone'), accessor: 'phone' },
     {
-      header: 'Status',
+      header: t('status'),
       render: (row) => (
         <span className={`px-2 py-1 rounded-full text-xs ${
           row.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
         }`}>
-          {row.is_active ? 'Active' : 'Inactive'}
+          {row.is_active ? t('active') : t('inactive')}
         </span>
       )
     },
     {
-      header: 'Actions',
+      header: t('actions'),
       render: (row) => (
         <div className="flex space-x-2">
           <button
@@ -370,7 +373,7 @@ const ManagerEmployees = ({ user }) => {
           <button
             onClick={() => handleDelete(row.id, !row.is_active)}
             className={`${!row.is_active ? 'text-red-700 hover:text-red-900' : 'text-red-600 hover:text-red-800'}`}
-            title={!row.is_active ? 'Permanently delete (hard delete)' : 'Soft delete (mark inactive)'}
+            title={!row.is_active ? t('hardDeletePermanent') : t('softDeleteMarkInactive')}
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -383,7 +386,7 @@ const ManagerEmployees = ({ user }) => {
 
   return (
     <div>
-      <Header title="Employees" subtitle="Manage your team members" />
+      <Header title={t('manageEmployees')} subtitle={t('manageYourTeam')} />
       <div className="p-6">
         {success && (
           <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-start">
@@ -392,8 +395,8 @@ const ManagerEmployees = ({ user }) => {
           </div>
         )}
         <Card
-          title="All Employees"
-          subtitle={`${employees.length} total employees`}
+          title={t('allEmployees')}
+          subtitle={`${employees.length} ${t('totalEmployees')}`}
           headerAction={
             <div className="flex gap-2">
               <select
@@ -401,7 +404,7 @@ const ManagerEmployees = ({ user }) => {
                 onChange={(e) => setEmploymentTypeFilter(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="all">All Types</option>
+                <option value="all">{t('allTypes')}</option>
                 <option value="full_time">Full-Time</option>
                 <option value="part_time">Part-Time</option>
               </select>
@@ -412,7 +415,7 @@ const ManagerEmployees = ({ user }) => {
                   onChange={(e) => setShowInactive(e.target.checked)}
                   className="w-4 h-4"
                 />
-                <span className="text-sm font-medium text-gray-700">Show Inactive</span>
+                <span className="text-sm font-medium text-gray-700">{t('showInactive')}</span>
               </label>
               <Button onClick={() => { setEditingEmployee(null); setShowModal(true); }}>
                 <Plus className="w-4 h-4 mr-2 inline" />
@@ -426,14 +429,14 @@ const ManagerEmployees = ({ user }) => {
         <Modal
           isOpen={showModal}
           onClose={() => { setShowModal(false); setEditingEmployee(null); }}
-          title={editingEmployee ? 'Edit Employee' : 'Add New Employee'}
+          title={editingEmployee ? t('editEmployeeTitle') : t('addNewEmployeeTitle')}
           footer={
             <div className="flex justify-end space-x-3">
               <Button variant="outline" onClick={() => { setShowModal(false); setEditingEmployee(null); }}>
                 Cancel
               </Button>
               <Button type="submit" form="employee-form">
-                {editingEmployee ? 'Update' : 'Create'} Employee
+                {editingEmployee ? t('updateButtonLabel') : t('createButtonLabel')} {t('employee')}
               </Button>
             </div>
           }
@@ -446,7 +449,7 @@ const ManagerEmployees = ({ user }) => {
           )}
           <form id="employee-form" onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('firstName')}</label>
               <input
                 type="text"
                 value={formData.first_name}
@@ -456,7 +459,7 @@ const ManagerEmployees = ({ user }) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('lastName')}</label>
               <input
                 type="text"
                 value={formData.last_name}
@@ -466,7 +469,7 @@ const ManagerEmployees = ({ user }) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('email')}</label>
               <input
                 type="email"
                 value={formData.email}
@@ -517,7 +520,7 @@ const ManagerEmployees = ({ user }) => {
                   onChange={(e) => setFormData({ ...formData, role_id: e.target.value ? parseInt(e.target.value) : null })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 >
-                  <option value="">Select a role</option>
+                  <option value="">{t('selectRole')}</option>
                   {roles.map((role) => (
                     <option key={role.id} value={role.id}>
                       {role.name}
@@ -526,7 +529,7 @@ const ManagerEmployees = ({ user }) => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Hire Date (Optional)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('hireDateOptional')}</label>
                 <input
                   type="date"
                   value={formData.hire_date}
@@ -536,7 +539,7 @@ const ManagerEmployees = ({ user }) => {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Employment Type</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('employmentTypeLabel')}</label>
               <select
                 value={formData.employment_type}
                 onChange={(e) => setFormData({ ...formData, employment_type: e.target.value })}
@@ -570,7 +573,7 @@ const ManagerEmployees = ({ user }) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Weekly Hours</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('weeklyHoursLabel')}</label>
               <input
                 type="number"
                 step="0.5"
@@ -581,7 +584,7 @@ const ManagerEmployees = ({ user }) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Daily Max Hours</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('dailyMaxHoursLabel')}</label>
               <input
                 type="number"
                 step="0.5"
@@ -592,7 +595,7 @@ const ManagerEmployees = ({ user }) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Shifts Per Week</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('shiftsPerWeekLabel')}</label>
               <input
                 type="number"
                 min="1"
@@ -602,7 +605,7 @@ const ManagerEmployees = ({ user }) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Annual Paid Leave Days</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('annualPaidLeaveDays')}</label>
               <input
                 type="number"
                 min="0"
@@ -630,6 +633,7 @@ const ManagerEmployees = ({ user }) => {
 };
 
 const ManagerRoles = ({ user }) => {
+  const { t } = useLanguage();
   const [roles, setRoles] = useState([]);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [showShiftModal, setShowShiftModal] = useState(false);
@@ -817,11 +821,11 @@ const ManagerRoles = ({ user }) => {
 
     // Validation
     if (!shiftForm.name || !shiftForm.name.trim()) {
-      setError('Shift name is required');
+      setError(t('shiftNameRequired'));
       return;
     }
     if (!shiftForm.start_time || !shiftForm.end_time) {
-      setError('Start time and end time are required');
+      setError(t('startTimeEndTimeRequired'));
       return;
     }
 
@@ -926,12 +930,12 @@ const ManagerRoles = ({ user }) => {
 
   return (
     <div>
-      <Header title="Roles & Shifts Management" subtitle="Configure job roles and their shift schedules" />
+      <Header title={t('rolesShiftsManagement')} subtitle={t('configureJobRoles')} />
       <div className="p-6 space-y-6">
 
         {/* Roles Section */}
         <Card
-          title="Job Roles"
+          title={t('jobRoles')}
           subtitle={`${roles.length} roles configured`}
           headerAction={
             <Button onClick={() => { setSelectedRole(null); setShowRoleModal(true); }}>
@@ -976,7 +980,7 @@ const ManagerRoles = ({ user }) => {
                         <span className={`px-2 py-1 rounded-full text-xs ${
                           role.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                         }`}>
-                          {role.is_active ? 'Active' : 'Inactive'}
+                          {role.is_active ? t('active') : t('inactive')}
                         </span>
                       </div>
                     </div>
@@ -990,7 +994,7 @@ const ManagerRoles = ({ user }) => {
                           openEditRole(role);
                         }}
                         className="p-2 text-blue-600 hover:bg-blue-100 rounded"
-                        title="Edit role"
+                        title={t('editRole')}
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
@@ -1001,7 +1005,7 @@ const ManagerRoles = ({ user }) => {
                           setShowDeleteConfirm('role');
                         }}
                         className="p-2 text-red-600 hover:bg-red-100 rounded"
-                        title="Delete role"
+                        title={t('deleteRole')}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -1023,7 +1027,7 @@ const ManagerRoles = ({ user }) => {
                               showArchivedShifts ? 'border-blue-500 text-blue-600 bg-blue-50' : 'border-gray-300 text-gray-600 bg-white'
                             }`}
                           >
-                            {showArchivedShifts ? 'Hide Archived' : 'View Archived'}
+                            {showArchivedShifts ? t('hideArchived') : t('viewArchived')}
                           </button>
                           <Button
                             onClick={(e) => {
@@ -1052,7 +1056,7 @@ const ManagerRoles = ({ user }) => {
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                                    Priority: {shift.priority}
+                                    {t('priority')}: {shift.priority}
                                   </span>
                                   <button
                                     onClick={(e) => {
@@ -1060,7 +1064,7 @@ const ManagerRoles = ({ user }) => {
                                       openEditShift(shift);
                                     }}
                                     className="p-2 text-blue-600 hover:bg-blue-100 rounded"
-                                    title="Edit shift"
+                                    title={t('editShift')}
                                   >
                                     <Edit2 className="w-4 h-4" />
                                   </button>
@@ -1071,7 +1075,7 @@ const ManagerRoles = ({ user }) => {
                                       setShowDeleteConfirm('shift');
                                     }}
                                     className="p-2 text-red-600 hover:bg-red-100 rounded"
-                                    title="Delete shift"
+                                    title={t('deleteShift')}
                                   >
                                     <Trash2 className="w-4 h-4" />
                                   </button>
@@ -1117,7 +1121,7 @@ const ManagerRoles = ({ user }) => {
                                     }}
                                     className="text-sm text-red-600 hover:bg-red-50 px-3 py-1 rounded border border-red-200"
                                   >
-                                    Delete Permanently
+                                    {t('deletePermanently')}
                                   </button>
                                 </div>
                               ))}
@@ -1158,7 +1162,7 @@ const ManagerRoles = ({ user }) => {
               }
             });
           }}
-          title={editingRole ? `Edit Role: ${roleForm.name}` : "Create New Job Role"}
+          title={editingRole ? `${t('editRole')}: ${roleForm.name}` : t('createNewJobRole')}
           footer={
             <div className="flex justify-end space-x-3">
               <Button variant="outline" onClick={() => {
@@ -1183,10 +1187,10 @@ const ManagerRoles = ({ user }) => {
                   }
                 });
               }}>
-                Cancel
+                {t('cancel')}
               </Button>
               <Button type="submit" form="role-form">
-                {editingRole ? 'Update Role' : 'Create Role'}
+                {editingRole ? t('updateRole') : t('createRole')}
               </Button>
             </div>
           }
@@ -1199,7 +1203,7 @@ const ManagerRoles = ({ user }) => {
           )}
           <form id="role-form" onSubmit={handleCreateRole} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Role Name *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('roleName')} *</label>
               <input
                 type="text"
                 value={roleForm.name}
@@ -1210,7 +1214,7 @@ const ManagerRoles = ({ user }) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('description')}</label>
               <textarea
                 value={roleForm.description}
                 onChange={(e) => setRoleForm({ ...roleForm, description: e.target.value })}
@@ -1221,7 +1225,7 @@ const ManagerRoles = ({ user }) => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Priority (1-100)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('priorityRange')}</label>
                 <input
                   type="number"
                   min="1"
@@ -1232,7 +1236,7 @@ const ManagerRoles = ({ user }) => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Priority % (1-100)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('priorityPercentageRange')}</label>
                 <input
                   type="number"
                   min="1"
@@ -1319,7 +1323,7 @@ const ManagerRoles = ({ user }) => {
               schedule_config: {}
             });
           }}
-          title={editingShift ? `Edit Shift: ${shiftForm.name}` : `Create Shift for ${selectedRole?.name || 'Role'}`}
+          title={editingShift ? `${t('editShift')}: ${shiftForm.name}` : `${t('createShift')} ${t('for')} ${selectedRole?.name || t('role')}`}
           footer={
             <div className="flex justify-end space-x-3">
               <Button variant="outline" onClick={() => {
@@ -1335,10 +1339,10 @@ const ManagerRoles = ({ user }) => {
                   schedule_config: {}
                 });
               }}>
-                Cancel
+                {t('cancel')}
               </Button>
               <Button type="submit" form="shift-form">
-                {editingShift ? 'Update Shift' : 'Create Shift'}
+                {editingShift ? t('updateRole') : t('createShift')}
               </Button>
             </div>
           }
@@ -1351,7 +1355,7 @@ const ManagerRoles = ({ user }) => {
           )}
           <form id="shift-form" onSubmit={handleCreateShift} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Shift Name *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('shiftName')} *</label>
               <input
                 type="text"
                 value={shiftForm.name}
@@ -1363,7 +1367,7 @@ const ManagerRoles = ({ user }) => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Start Time *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('startTime')} *</label>
                 <input
                   type="time"
                   value={shiftForm.start_time}
@@ -1373,7 +1377,7 @@ const ManagerRoles = ({ user }) => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">End Time *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('endTime')} *</label>
                 <input
                   type="time"
                   value={shiftForm.end_time}
@@ -1385,7 +1389,7 @@ const ManagerRoles = ({ user }) => {
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Min Employees</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('minEmployees')}</label>
                 <input
                   type="number"
                   value={shiftForm.min_emp}
@@ -1395,7 +1399,7 @@ const ManagerRoles = ({ user }) => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Max Employees</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('maxEmployees')}</label>
                 <input
                   type="number"
                   value={shiftForm.max_emp}
@@ -1405,7 +1409,7 @@ const ManagerRoles = ({ user }) => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('priority')}</label>
                 <input
                   type="number"
                   value={shiftForm.priority}
@@ -1426,7 +1430,7 @@ const ManagerRoles = ({ user }) => {
             setShowDeleteConfirm(null);
             setDeleteTarget(null);
           }}
-          title="Confirm Delete"
+          title={t('confirmDelete')}
           footer={
             <div className="flex justify-end space-x-3">
               <Button
@@ -1449,7 +1453,7 @@ const ManagerRoles = ({ user }) => {
                 }}
                 className="bg-red-600 hover:bg-red-700"
               >
-                Delete
+                {t('delete')}
               </Button>
             </div>
           }
@@ -1479,8 +1483,8 @@ const ManagerRoles = ({ user }) => {
     </div>
   );
 };
-
 const ManagerSchedules = ({ user }) => {
+  const { t } = useLanguage();
   const [employees, setEmployees] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1516,7 +1520,7 @@ const ManagerSchedules = ({ user }) => {
 
   return (
     <div>
-      <Header title="Schedule Management" subtitle="View, create, and manage employee schedules" />
+      <Header title={t('scheduleManagement')} subtitle="View, create, and manage employee schedules" />
       <div className="p-6">
         <ScheduleManager
           employees={employees}
@@ -1542,6 +1546,7 @@ function getWeekDates() {
 }
 
 const ManagerLeaves = () => {
+  const { t } = useLanguage();
   const [leaves, setLeaves] = useState([]);
   const [selectedLeave, setSelectedLeave] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -1985,7 +1990,7 @@ const ManagerLeaves = () => {
 
   return (
     <div>
-      <Header title="Leave Requests" subtitle="Review and manage leave requests" />
+      <Header title={t('leaveManagement')} subtitle={t('reviewAndManageLeaveRequests')} />
       <div className="p-6">
         {/* Employee Search Section */}
         <Card title="Search Employee Leave Details" className="mb-6">
@@ -2040,20 +2045,20 @@ const ManagerLeaves = () => {
 
             {/* Quick Stats Cards - Comp-Off */}
             <div className="mb-6">
-              <h4 className="text-sm font-semibold text-gray-700 mb-2">⏰ Comp-Off Summary</h4>
+              <h4 className="text-sm font-semibold text-gray-700 mb-2">⏰ {t('compOffSummary')}</h4>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div className="p-4 bg-cyan-50 rounded-lg border border-cyan-200 border-l-4">
-                  <p className="text-xs text-gray-600 mb-1">Comp-Off Earned</p>
+                  <p className="text-xs text-gray-600 mb-1">{t('compOffEarned')}</p>
                   <p className="text-2xl font-bold text-cyan-600">{employeeStats.comp_off_earned || 0}</p>
                   <p className="text-xs text-gray-500 mt-1">total days</p>
                 </div>
                 <div className="p-4 bg-amber-50 rounded-lg border border-amber-200 border-l-4">
-                  <p className="text-xs text-gray-600 mb-1">Comp-Off Used</p>
+                  <p className="text-xs text-gray-600 mb-1">{t('compOffUsed')}</p>
                   <p className="text-2xl font-bold text-amber-600">{employeeStats.comp_off_used || 0}</p>
                   <p className="text-xs text-gray-500 mt-1">days taken</p>
                 </div>
                 <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-200 border-l-4">
-                  <p className="text-xs text-gray-600 mb-1">Comp-Off Available</p>
+                  <p className="text-xs text-gray-600 mb-1">{t('compOffAvailable')}</p>
                   <p className="text-2xl font-bold text-emerald-600">{employeeStats.comp_off_available || 0}</p>
                   <p className="text-xs text-gray-500 mt-1">days remaining</p>
                 </div>
@@ -2145,21 +2150,21 @@ const ManagerLeaves = () => {
                     {/* Comp-Off Statistics - Detailed */}
                     <div className="mb-8">
                       <h3 className="text-lg font-bold text-gray-900 mb-4 pb-2 border-b-2 border-cyan-500">
-                        ⏰ Comp-Off Statistics
+                        ⏰ {t('compOffStatistics')}
                       </h3>
                       <div className="grid grid-cols-3 gap-4 mb-6">
                         <div className="p-4 bg-cyan-50 rounded-lg border-l-4 border-cyan-500">
-                          <p className="text-xs text-gray-600 uppercase tracking-wide mb-2">Comp-Off Earned</p>
+                          <p className="text-xs text-gray-600 uppercase tracking-wide mb-2">{t('compOffEarned')}</p>
                           <p className="text-4xl font-bold text-cyan-600">{employeeStats.comp_off_earned || 0}</p>
                           <p className="text-xs text-gray-500 mt-1">total days earned</p>
                         </div>
                         <div className="p-4 bg-amber-50 rounded-lg border-l-4 border-amber-500">
-                          <p className="text-xs text-gray-600 uppercase tracking-wide mb-2">Comp-Off Used</p>
+                          <p className="text-xs text-gray-600 uppercase tracking-wide mb-2">{t('compOffUsed')}</p>
                           <p className="text-4xl font-bold text-amber-600">{employeeStats.comp_off_used || 0}</p>
                           <p className="text-xs text-gray-500 mt-1">days utilized</p>
                         </div>
                         <div className="p-4 bg-emerald-50 rounded-lg border-l-4 border-emerald-500">
-                          <p className="text-xs text-gray-600 uppercase tracking-wide mb-2">Comp-Off Available</p>
+                          <p className="text-xs text-gray-600 uppercase tracking-wide mb-2">{t('compOffAvailable')}</p>
                           <p className="text-4xl font-bold text-emerald-600">{employeeStats.comp_off_available || 0}</p>
                           <p className="text-xs text-gray-500 mt-1">days remaining</p>
                         </div>
@@ -2243,7 +2248,7 @@ const ManagerLeaves = () => {
                     {employeeStats.comp_off_monthly_breakdown && employeeStats.comp_off_monthly_breakdown.length > 0 && (
                       <div className="mb-8">
                         <h3 className="text-lg font-bold text-gray-900 mb-4 pb-2 border-b-2 border-cyan-500">
-                          ⏰ Comp-Off Monthly Breakdown
+                          ⏰ {t('compOffMonthlyBreakdown')}
                         </h3>
                         <div className="overflow-x-auto rounded-lg border border-gray-300">
                           <table className="w-full text-sm">
@@ -2292,7 +2297,7 @@ const ManagerLeaves = () => {
                     {employeeStats.comp_off_details && employeeStats.comp_off_details.length > 0 && (
                       <div className="mb-8">
                         <h3 className="text-lg font-bold text-gray-900 mb-4 pb-2 border-b-2 border-cyan-500">
-                          ⏰ Recent Comp-Off Transactions (Last 10)
+                          ⏰ {t('recentCompOffTransactions')} {t('last10Transactions')}
                         </h3>
                         <div className="overflow-x-auto rounded-lg border border-gray-300">
                           <table className="w-full text-sm">
@@ -2404,7 +2409,7 @@ const ManagerLeaves = () => {
             <div className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Pending</p>
+                  <p className="text-sm text-gray-500 mb-1">{t('pendingLabel')}</p>
                   <p className="text-3xl font-bold text-yellow-600">{pendingCount}</p>
                 </div>
                 <Clock className="w-8 h-8 text-yellow-600" />
@@ -2415,7 +2420,7 @@ const ManagerLeaves = () => {
             <div className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Approved</p>
+                  <p className="text-sm text-gray-500 mb-1">{t('approvedLabel')}</p>
                   <p className="text-3xl font-bold text-green-600">
                     {leaves.filter(l => l.status === 'approved').length}
                   </p>
@@ -2428,7 +2433,7 @@ const ManagerLeaves = () => {
             <div className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Rejected</p>
+                  <p className="text-sm text-gray-500 mb-1">{t('rejectedLabel')}</p>
                   <p className="text-3xl font-bold text-red-600">
                     {leaves.filter(l => l.status === 'rejected').length}
                   </p>
@@ -2717,7 +2722,7 @@ const ManagerAttendance = ({ user }) => {
 
   return (
     <div>
-      <Header title="Attendance" subtitle="Track daily employee attendance" />
+      <Header title={t('attendance')} subtitle={t('trackDailyEmployeeAttendance')} />
       <div className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <Card padding={false}>
@@ -3125,7 +3130,7 @@ const ManagerMessages = ({ user }) => {
 
   return (
     <div>
-      <Header title="Messages" subtitle="Communicate with your team" />
+      <Header title={t('messages')} subtitle={t('communicateWithYourTeam')} />
       <div className="p-6">
         <Card
           title="Messages"
@@ -3133,7 +3138,7 @@ const ManagerMessages = ({ user }) => {
           headerAction={
             <Button onClick={() => setShowModal(true)}>
               <Plus className="w-4 h-4 mr-2 inline" />
-              New Message
+              {t('newMessage')}
             </Button>
           }
         >
@@ -3146,7 +3151,7 @@ const ManagerMessages = ({ user }) => {
                   : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
-              All ({messages.length})
+              {t('all')} ({messages.length})
             </button>
             <button
               onClick={() => setFilter('sent')}
@@ -3156,7 +3161,7 @@ const ManagerMessages = ({ user }) => {
                   : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
-              Sent ({messages.filter(m => m.sender_id === user.id).length})
+              {t('sent')} ({messages.filter(m => m.sender_id === user.id).length})
             </button>
             <button
               onClick={() => setFilter('received')}
@@ -3166,14 +3171,14 @@ const ManagerMessages = ({ user }) => {
                   : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
-              Received ({messages.filter(m => m.recipient_id === user.id || m.department_id === user.manager_department_id).length})
+              {t('received')} ({messages.filter(m => m.recipient_id === user.id || m.department_id === user.manager_department_id).length})
             </button>
           </div>
           {filteredMessages.length === 0 ? (
             <div className="text-center py-12">
               <Send className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-500">No messages yet</p>
-              <p className="text-sm text-gray-400 mt-2">Send your first message to get started</p>
+              <p className="text-gray-500">{t('noMessagesYet')}</p>
+              <p className="text-sm text-gray-400 mt-2">{t('sendYourFirstMessage')}</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -3194,11 +3199,11 @@ const ManagerMessages = ({ user }) => {
                           <span className={`px-2 py-1 rounded text-xs font-medium ${
                             isSent ? 'bg-blue-200 text-blue-800' : 'bg-green-200 text-green-800'
                           }`}>
-                            {isSent ? 'Sent' : 'Received'}
+                            {isSent ? t('sent') : t('received')}
                           </span>
                           {!msg.is_read && !isSent && (
                             <span className="px-2 py-1 rounded text-xs font-medium bg-yellow-200 text-yellow-800">
-                              Unread
+                              {t('unread')}
                             </span>
                           )}
                         </div>
@@ -3206,15 +3211,15 @@ const ManagerMessages = ({ user }) => {
                         <p className="text-sm text-gray-600 mt-1">
                           {isSent ? (
                             msg.recipient_id ? (
-                              <>To: {getEmployeeName(msg.recipient_id)}</>
+                              <>{t('to')}: {getEmployeeName(msg.recipient_id)}</>
                             ) : (
-                              'To: All Department'
+                              `${t('to')}: ${t('allDepartment')}`
                             )
                           ) : (
                             msg.sender_id ? (
-                              <>From: {getEmployeeName(msg.sender_id)}</>
+                              <>{t('from')}: {getEmployeeName(msg.sender_id)}</>
                             ) : (
-                              'From: System'
+                              `${t('from')}: ${t('system')}`
                             )
                           )}
                         </p>
@@ -3226,7 +3231,7 @@ const ManagerMessages = ({ user }) => {
                         <button
                           onClick={() => handleDelete(msg.id)}
                           className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50"
-                          title="Delete message"
+                          title={t('deleteMessage')}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -3244,7 +3249,7 @@ const ManagerMessages = ({ user }) => {
         <Modal
           isOpen={showModal}
           onClose={() => setShowModal(false)}
-          title="Send New Message"
+          title={t('newMessage')}
           footer={
             <div className="flex justify-end space-x-3">
               <Button variant="outline" onClick={() => setShowModal(false)}>
@@ -3252,7 +3257,7 @@ const ManagerMessages = ({ user }) => {
               </Button>
               <Button type="submit" form="message-form">
                 <Send className="w-4 h-4 mr-2 inline" />
-                Send Message
+                {t('sendMessage')}
               </Button>
             </div>
           }
@@ -3323,9 +3328,10 @@ const ManagerMessages = ({ user }) => {
 // =============== MANAGER COMP-OFF COMPONENT ===============
 
 const ManagerCompOff = ({ user }) => {
+  const { t } = useLanguage();
   return (
     <div>
-      <Header title="Comp-Off Management" subtitle="Manage and approve employee comp-off requests" />
+      <Header title={t('compOffManagement')} subtitle={t('manageAndApproveCompOffRequests')} />
       <div className="p-6">
         <CompOffManagement currentUser={user} departmentId={user.manager_department_id} />
       </div>

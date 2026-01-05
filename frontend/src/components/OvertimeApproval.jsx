@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { AlertCircle, CheckCircle, XCircle, Check, X } from 'lucide-react';
 import api from '../services/api';
+import { useLanguage } from '../context/LanguageContext';
 
 const OvertimeApproval = () => {
+  const { t } = useLanguage();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState(null);
@@ -24,7 +26,7 @@ const OvertimeApproval = () => {
       console.error('Error loading overtime requests:', error);
       setMessage({
         type: 'error',
-        text: 'Failed to load overtime requests'
+        text: t('failedToLoadOvertimeRequests')
       });
     } finally {
       setLoading(false);
@@ -39,7 +41,7 @@ const OvertimeApproval = () => {
       });
       setMessage({
         type: 'success',
-        text: 'Overtime request approved'
+        text: t('overtimeRequestApproved')
       });
       setSelectedRequest(null);
       setApprovalNotes('');
@@ -48,7 +50,7 @@ const OvertimeApproval = () => {
       console.error('Error approving request:', error);
       setMessage({
         type: 'error',
-        text: error.response?.data?.detail || 'Failed to approve request'
+        text: error.response?.data?.detail || t('failedToApproveRequest')
       });
     } finally {
       setProcessingId(null);
@@ -63,7 +65,7 @@ const OvertimeApproval = () => {
       });
       setMessage({
         type: 'success',
-        text: 'Overtime request rejected'
+        text: t('overtimeRequestRejected')
       });
       setSelectedRequest(null);
       setApprovalNotes('');
@@ -72,7 +74,7 @@ const OvertimeApproval = () => {
       console.error('Error rejecting request:', error);
       setMessage({
         type: 'error',
-        text: error.response?.data?.detail || 'Failed to reject request'
+        text: error.response?.data?.detail || t('failedToRejectRequest')
       });
     } finally {
       setProcessingId(null);
@@ -92,27 +94,27 @@ const OvertimeApproval = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Overtime Approvals</h1>
-        <p className="text-gray-600 mt-1">Review and approve employee overtime requests</p>
+        <h1 className="text-3xl font-bold text-gray-900">{t('overtimeApprovals')}</h1>
+        <p className="text-gray-600 mt-1">{t('reviewApproveOvertimeRequests')}</p>
       </div>
 
       {/* Status Filter */}
       <div className="flex gap-2">
-        {['PENDING', 'APPROVED', 'REJECTED'].map((status) => (
+        {[{ key: 'PENDING', label: 'pending' }, { key: 'APPROVED', label: 'approved' }, { key: 'REJECTED', label: 'rejected' }].map(({ key, label }) => (
           <button
-            key={status}
-            onClick={() => setFilterStatus(status)}
+            key={key}
+            onClick={() => setFilterStatus(key)}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              filterStatus === status
-                ? status === 'PENDING'
+              filterStatus === key
+                ? key === 'PENDING'
                   ? 'bg-yellow-600 text-white'
-                  : status === 'APPROVED'
+                  : key === 'APPROVED'
                   ? 'bg-green-600 text-white'
                   : 'bg-red-600 text-white'
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
             }`}
           >
-            {status}
+            {t(label)}
           </button>
         ))}
       </div>
@@ -136,7 +138,7 @@ const OvertimeApproval = () => {
             onClick={() => setMessage(null)}
             className="ml-auto text-sm font-medium hover:opacity-75"
           >
-            Dismiss
+            {t('dismissAlert')}
           </button>
         </div>
       )}
@@ -149,9 +151,9 @@ const OvertimeApproval = () => {
       ) : requests.length === 0 ? (
         <div className="bg-gray-50 rounded-lg border border-gray-200 p-8 text-center">
           <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-3" />
-          <p className="text-gray-600 font-semibold">All Caught Up!</p>
+          <p className="text-gray-600 font-semibold">{t('allCaughtUp')}</p>
           <p className="text-sm text-gray-500 mt-1">
-            No pending overtime requests at the moment
+            {t('noPendingOvertimeRequests')}
           </p>
         </div>
       ) : (
@@ -184,27 +186,27 @@ const OvertimeApproval = () => {
 
                   <div className="mb-3 p-3 bg-gray-50 rounded-lg">
                     <p className="text-sm text-gray-700 font-medium mb-1">
-                      <strong>Date:</strong> {new Date(request.request_date).toLocaleDateString()}
+                      <strong>{t('date')}:</strong> {new Date(request.request_date).toLocaleDateString()}
                     </p>
                     <p className="text-sm text-gray-700 font-medium mb-1">
-                      <strong>Time:</strong> <span className="text-lg font-bold text-blue-600">{request.from_time || 'N/A'} - {request.to_time || 'N/A'}</span>
+                      <strong>{t('time')}:</strong> <span className="text-lg font-bold text-blue-600">{request.from_time || 'N/A'} - {request.to_time || 'N/A'}</span>
                     </p>
                     <p className="text-sm text-gray-700 font-medium mb-2">
-                      <strong>Hours:</strong> <span className="text-lg font-bold text-blue-600">{request.request_hours?.toFixed(1) || 'N/A'} hours</span>
+                      <strong>{t('overtimeHours')}:</strong> <span className="text-lg font-bold text-blue-600">{request.request_hours?.toFixed(1) || 'N/A'} {t('hours')}</span>
                     </p>
-                    <p className="text-sm text-gray-600"><strong>Reason:</strong> {request.reason}</p>
+                    <p className="text-sm text-gray-600"><strong>{t('reason')}:</strong> {request.reason}</p>
                   </div>
 
                   {selectedRequest?.id === request.id && isStatusPending(request.status) ? (
                     <div className="space-y-3 pt-3 border-t border-gray-200">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Approval Notes
+                          {t('overtimeApprovalNotes')}
                         </label>
                         <textarea
                           value={approvalNotes}
                           onChange={(e) => setApprovalNotes(e.target.value)}
-                          placeholder="Add notes about this decision..."
+                          placeholder={t('addNotesAboutDecision')}
                           rows="2"
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
@@ -216,7 +218,7 @@ const OvertimeApproval = () => {
                           className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
                           <Check className="w-4 h-4" />
-                          {processingId === request.id ? 'Processing...' : 'Approve'}
+                          {processingId === request.id ? t('processing') : t('approveOvertime')}
                         </button>
                         <button
                           onClick={() => handleReject(request.id)}
@@ -224,7 +226,7 @@ const OvertimeApproval = () => {
                           className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
                           <X className="w-4 h-4" />
-                          {processingId === request.id ? 'Processing...' : 'Reject'}
+                          {processingId === request.id ? t('processing') : t('rejectOvertime')}
                         </button>
                         <button
                           onClick={() => {
@@ -233,7 +235,7 @@ const OvertimeApproval = () => {
                           }}
                           className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50"
                         >
-                          Cancel
+                          {t('cancel')}
                         </button>
                       </div>
                     </div>
@@ -241,10 +243,10 @@ const OvertimeApproval = () => {
                     <div className="space-y-3 pt-3 border-t border-gray-200">
                       <div>
                         <p className="text-sm text-gray-700 font-medium mb-2">
-                          Manager Notes:
+                          {t('managerNotes')}:
                         </p>
                         <p className="text-sm text-gray-600 p-3 bg-gray-50 rounded-lg">
-                          {request.manager_notes || 'No notes provided'}
+                          {request.manager_notes || t('noNotesProvided')}
                         </p>
                       </div>
                       <button
@@ -254,7 +256,7 @@ const OvertimeApproval = () => {
                         }}
                         className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50"
                       >
-                        Close
+                        {t('close')}
                       </button>
                     </div>
                   ) : (
@@ -262,7 +264,7 @@ const OvertimeApproval = () => {
                       onClick={() => setSelectedRequest(request)}
                       className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
                     >
-                      {isStatusPending(request.status) ? 'Review Request' : 'View Details'}
+                      {isStatusPending(request.status) ? t('reviewRequest') : t('viewDetails')}
                     </button>
                   )}
                 </div>

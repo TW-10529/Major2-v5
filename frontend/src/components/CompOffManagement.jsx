@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Plus, CheckCircle, Clock, AlertCircle, TrendingDown } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 import api, {
   listCompOffRequests,
   getCompOffTracking,
@@ -11,6 +12,7 @@ import api, {
 } from '../services/api';
 
 const CompOffManagement = ({ currentUser, departmentId }) => {
+  const { t } = useLanguage();
   const [compOffRequests, setCompOffRequests] = useState([]);
   const [compOffTracking, setCompOffTracking] = useState(null);
   const [monthlyBreakdown, setMonthlyBreakdown] = useState([]);
@@ -197,16 +199,16 @@ const CompOffManagement = ({ currentUser, departmentId }) => {
 
   const getStatusBadge = (status) => {
     const statusMap = {
-      pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Pending', icon: Clock },
-      approved: { bg: 'bg-green-100', text: 'text-green-800', label: 'Approved', icon: CheckCircle },
-      rejected: { bg: 'bg-red-100', text: 'text-red-800', label: 'Rejected', icon: AlertCircle }
+      pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', labelKey: 'pending', icon: Clock },
+      approved: { bg: 'bg-green-100', text: 'text-green-800', labelKey: 'approved', icon: CheckCircle },
+      rejected: { bg: 'bg-red-100', text: 'text-red-800', labelKey: 'rejected', icon: AlertCircle }
     };
     const config = statusMap[status] || statusMap.pending;
     const Icon = config.icon;
     return (
       <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 w-fit ${config.bg} ${config.text}`}>
         <Icon className="w-4 h-4" />
-        {config.label}
+        {t(config.labelKey)}
       </span>
     );
   };
@@ -238,23 +240,23 @@ const CompOffManagement = ({ currentUser, departmentId }) => {
         <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-6 rounded-lg border-2 border-indigo-200">
           <h3 className="text-lg font-semibold mb-4 text-gray-800 flex items-center gap-2">
             <Calendar className="w-5 h-5 text-indigo-600" />
-            Your Comp-Off Balance
+            {t('compOffBalance')}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-blue-500">
-              <p className="text-sm text-gray-600 mb-1">Earned Days</p>
+              <p className="text-sm text-gray-600 mb-1">{t('earnedDays')}</p>
               <p className="text-3xl font-bold text-blue-600">{compOffTracking.earned_days}</p>
-              <p className="text-xs text-gray-500 mt-1">from non-shift days worked</p>
+              <p className="text-xs text-gray-500 mt-1">{t('fromNonShiftDaysWorked')}</p>
             </div>
             <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-orange-500">
-              <p className="text-sm text-gray-600 mb-1">Used Days</p>
+              <p className="text-sm text-gray-600 mb-1">{t('usedDays')}</p>
               <p className="text-3xl font-bold text-orange-600">{compOffTracking.used_days}</p>
-              <p className="text-xs text-gray-500 mt-1">already taken</p>
+              <p className="text-xs text-gray-500 mt-1">{t('alreadyTaken')}</p>
             </div>
             <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-green-500">
-              <p className="text-sm text-gray-600 mb-1">Available Days</p>
+              <p className="text-sm text-gray-600 mb-1">{t('availableDays')}</p>
               <p className="text-3xl font-bold text-green-600">{Math.max(0, compOffTracking.available_days)}</p>
-              <p className="text-xs text-gray-500 mt-1">ready to use</p>
+              <p className="text-xs text-gray-500 mt-1">{t('readyToUse')}</p>
             </div>
           </div>
         </div>
@@ -294,13 +296,13 @@ const CompOffManagement = ({ currentUser, departmentId }) => {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
               <TrendingDown className="w-5 h-5 text-indigo-600" />
-              Monthly Comp-Off Breakdown
+              {t('monthlyCompOffBreakdown')}
             </h3>
             <button
               onClick={() => setShowMonthlyBreakdown(!showMonthlyBreakdown)}
               className="text-sm bg-indigo-100 text-indigo-700 px-3 py-1 rounded hover:bg-indigo-200 transition"
             >
-              {showMonthlyBreakdown ? 'Hide' : 'Show'} Details
+              {showMonthlyBreakdown ? t('hide') : t('show')} {t('details')}
             </button>
           </div>
 
@@ -319,19 +321,19 @@ const CompOffManagement = ({ currentUser, departmentId }) => {
                   
                   <div className="grid grid-cols-4 gap-2 mb-3">
                     <div className="bg-white p-2 rounded border border-gray-300">
-                      <p className="text-xs text-gray-600">Earned</p>
+                      <p className="text-xs text-gray-600">{t('earned')}</p>
                       <p className="text-lg font-bold text-blue-600">{month.earned}</p>
                     </div>
                     <div className="bg-white p-2 rounded border border-gray-300">
-                      <p className="text-xs text-gray-600">Used</p>
+                      <p className="text-xs text-gray-600">{t('used')}</p>
                       <p className="text-lg font-bold text-orange-600">{month.used}</p>
                     </div>
                     <div className="bg-white p-2 rounded border border-gray-300">
-                      <p className="text-xs text-gray-600">Available</p>
+                      <p className="text-xs text-gray-600">{t('available')}</p>
                       <p className="text-lg font-bold text-green-600">{month.available}</p>
                     </div>
                     <div className="bg-white p-2 rounded border border-gray-300">
-                      <p className="text-xs text-gray-600">Expired</p>
+                      <p className="text-xs text-gray-600">{t('expired')}</p>
                       <p className="text-lg font-bold text-red-600">{month.expired}</p>
                     </div>
                   </div>
@@ -371,14 +373,14 @@ const CompOffManagement = ({ currentUser, departmentId }) => {
       {currentUser?.user_type === 'employee' && (
         <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-800">Request to Earn Comp-Off</h3>
+            <h3 className="text-lg font-semibold text-gray-800">{t('requestToEarnCompOff')}</h3>
             {!showCompOffForm && (
               <button
                 onClick={() => setShowCompOffForm(true)}
                 className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition"
               >
                 <Plus className="w-4 h-4" />
-                New Comp-Off Request
+                {t('newCompOffRequest')}
               </button>
             )}
           </div>
@@ -387,7 +389,7 @@ const CompOffManagement = ({ currentUser, departmentId }) => {
             <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Date You Worked (Non-Shift Day) <span className="text-red-500">*</span>
+                  {t('dateYouWorked')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
@@ -396,13 +398,13 @@ const CompOffManagement = ({ currentUser, departmentId }) => {
                   className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Select the date when you worked on a non-shift day (weekend/holiday) to earn comp-off.
+                  {t('selectDateWorkedNonShiftDay')}
                 </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Reason (What work did you do?)
+                  {t('reason')}
                 </label>
                 <textarea
                   value={compOffForm.reason}
@@ -419,13 +421,97 @@ const CompOffManagement = ({ currentUser, departmentId }) => {
                   disabled={loading}
                   className="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition disabled:opacity-50"
                 >
-                  {loading ? 'Submitting...' : 'Request to Earn Comp-Off'}
+                  {loading ? t('submitting') + '...' : t('requestToEarnCompOff')}
                 </button>
                 <button
                   onClick={() => setShowCompOffForm(false)}
                   className="flex-1 bg-gray-300 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-400 transition"
                 >
-                  Cancel
+                  {t('cancel')}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Add Comp-Off Form - For Managers */}
+      {currentUser?.user_type === 'manager' && (
+        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-800">{t('requestToEarnCompOff')}</h3>
+            {!showCompOffForm && (
+              <button
+                onClick={() => setShowCompOffForm(true)}
+                className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition"
+              >
+                <Plus className="w-4 h-4" />
+                {t('newCompOffRequest')}
+              </button>
+            )}
+          </div>
+
+          {showCompOffForm && (
+            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t('employee')} <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={compOffForm.employee_id}
+                  onChange={(e) => setCompOffForm({ ...compOffForm, employee_id: e.target.value })}
+                  className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="">Select an employee</option>
+                  {employees.map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.first_name} {emp.last_name} ({emp.employee_id})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t('dateYouWorked')} <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={compOffForm.comp_off_date}
+                  onChange={(e) => setCompOffForm({ ...compOffForm, comp_off_date: e.target.value })}
+                  className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  {t('selectDateWorkedNonShiftDay')}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t('reason')}
+                </label>
+                <textarea
+                  value={compOffForm.reason}
+                  onChange={(e) => setCompOffForm({ ...compOffForm, reason: e.target.value })}
+                  placeholder="e.g., Worked on project deadline, attended emergency meeting, etc."
+                  className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  rows="3"
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={handleAddCompOff}
+                  disabled={loading}
+                  className="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition disabled:opacity-50"
+                >
+                  {loading ? t('submitting') + '...' : t('requestToEarnCompOff')}
+                </button>
+                <button
+                  onClick={() => setShowCompOffForm(false)}
+                  className="flex-1 bg-gray-300 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-400 transition"
+                >
+                  {t('cancel')}
                 </button>
               </div>
             </div>
@@ -508,14 +594,14 @@ const CompOffManagement = ({ currentUser, departmentId }) => {
                           disabled={loading}
                           className="inline-block bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition disabled:opacity-50"
                         >
-                          Approve
+                          {t('approve')}
                         </button>
                         <button
                           onClick={() => handleRejectCompOff(request.id)}
                           disabled={loading}
                           className="inline-block bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition disabled:opacity-50"
                         >
-                          Reject
+                          {t('reject')}
                         </button>
                       </td>
                     )}

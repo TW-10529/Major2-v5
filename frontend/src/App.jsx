@@ -4,6 +4,7 @@ import Login from './pages/Login';
 import EmployeeDashboard from './pages/Employee';
 import ManagerDashboard from './pages/Manager';
 import AdminDashboard from './pages/Admin';
+import { LanguageProvider } from './context/LanguageContext';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -40,31 +41,33 @@ function App() {
   }
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route 
-          path="/login" 
-          element={
-            user ? <Navigate to="/" /> : <Login onLogin={handleLogin} />
-          } 
-        />
-        
-        <Route
-          path="/*"
-          element={
-            !user ? (
-              <Navigate to="/login" />
-            ) : user.user_type === 'admin' ? (
-              <AdminDashboard user={user} onLogout={handleLogout} />
-            ) : user.user_type === 'manager' ? (
-              <ManagerDashboard user={user} onLogout={handleLogout} />
-            ) : (
-              <EmployeeDashboard user={user} onLogout={handleLogout} />
-            )
-          }
-        />
-      </Routes>
-    </BrowserRouter>
+    <LanguageProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route 
+            path="/login" 
+            element={
+              user ? <Navigate to="/" /> : <Login onLogin={handleLogin} />
+            } 
+          />
+          
+          <Route
+            path="/*"
+            element={
+              !user ? (
+                <Navigate to="/login" />
+              ) : user.user_type === 'admin' ? (
+                <AdminDashboard user={user} onLogout={handleLogout} />
+              ) : user.user_type === 'manager' ? (
+                <ManagerDashboard user={user} onLogout={handleLogout} />
+              ) : (
+                <EmployeeDashboard user={user} onLogout={handleLogout} />
+              )
+            }
+          />
+        </Routes>
+      </BrowserRouter>
+    </LanguageProvider>
   );
 }
 

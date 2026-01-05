@@ -7,6 +7,7 @@ import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
 import Table from '../components/common/Table';
 import { format } from 'date-fns';
+import { useLanguage } from '../context/LanguageContext';
 import api from '../services/api';
 import {
   listUsers,
@@ -33,6 +34,7 @@ import {
 // =============== ADMIN PAGES ===============
 
 const AdminDashboardHome = () => {
+  const { t } = useLanguage();
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalDepartments: 0,
@@ -74,23 +76,23 @@ const AdminDashboardHome = () => {
   };
 
   const statCards = [
-    { title: 'Total Users', value: stats.totalUsers, icon: Users, color: 'blue' },
-    { title: 'Departments', value: stats.totalDepartments, icon: Building2, color: 'green' },
-    { title: 'Managers', value: stats.totalManagers, icon: UserCog, color: 'purple' },
-    { title: 'Employees', value: stats.totalEmployees, icon: TrendingUp, color: 'orange' }
+    { title: t('totalUsers'), value: stats.totalUsers, icon: Users, color: 'blue' },
+    { title: t('totalDepartments'), value: stats.totalDepartments, icon: Building2, color: 'green' },
+    { title: t('totalManagers'), value: stats.totalManagers, icon: UserCog, color: 'purple' },
+    { title: t('totalEmployees'), value: stats.totalEmployees, icon: TrendingUp, color: 'orange' }
   ];
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-xl text-gray-500">Loading...</div>
+        <div className="text-xl text-gray-500">{t('loading')}</div>
       </div>
     );
   }
 
   return (
     <div>
-      <Header title="Admin Dashboard" subtitle="Manage your organization" />
+      <Header title={t('dashboard')} subtitle={t('recentActivity')} />
       <div className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
           {statCards.map((stat, index) => (
@@ -109,10 +111,10 @@ const AdminDashboardHome = () => {
             </Card>
           ))}
         </div>
-        <Card title="System Overview">
+        <Card title={t('recentActivity')}>
           <div className="space-y-4">
             <div>
-              <h4 className="font-semibold text-gray-900 mb-2">Recent Activity</h4>
+              <h4 className="font-semibold text-gray-900 mb-2">{t('recentActivity')}</h4>
               <p className="text-gray-600">System is running smoothly. All services operational.</p>
             </div>
             <div>
@@ -130,6 +132,7 @@ const AdminDashboardHome = () => {
 };
 
 const AdminManagers = () => {
+  const { t } = useLanguage();
   const [managers, setManagers] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -498,22 +501,22 @@ const AdminManagers = () => {
   if (loading) return (
     <div className="p-6">
       <div className="flex items-center justify-center h-64">
-        <div className="text-xl text-gray-500">Loading managers...</div>
+        <div className="text-xl text-gray-500">{t('loading')}</div>
       </div>
     </div>
   );
 
   return (
     <div>
-      <Header title="Managers" subtitle="Create and manage department managers" />
+      <Header title={t('manageManagers')} subtitle="Create and manage department managers" />
       <div className="p-6 space-y-6">
         <Card
-          title="All Managers"
+          title={t('manageManagers')}
           subtitle={`${managers.length} total managers`}
           headerAction={
             <Button onClick={() => setShowModal(true)}>
               <Plus className="w-4 h-4 mr-2 inline" />
-              Add Manager
+              {t('add')}
             </Button>
           }
         >
@@ -537,7 +540,7 @@ const AdminManagers = () => {
             setShowDeptSearch(false);
             setSelectedDeptInfo(null);
           }}
-          title="Create New Manager"
+          title={t('createNewUser')}
           footer={
             <div className="flex justify-end space-x-3">
               <Button
@@ -964,6 +967,7 @@ const AdminManagers = () => {
 // =============== ADMIN DEPARTMENTS COMPONENT ===============
 
 const AdminDepartments = () => {
+  const { t } = useLanguage();
   const [departments, setDepartments] = useState([]);
   const [selectedDept, setSelectedDept] = useState(null);
   const [deptDetails, setDeptDetails] = useState(null);
@@ -1239,10 +1243,10 @@ const AdminDepartments = () => {
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900">Department Management</h1>
+          <h1 className="text-4xl font-bold text-gray-900">{t('manageDepartments')}</h1>
           <Button onClick={() => setShowModal(true)}>
             <Plus className="w-4 h-4 mr-2 inline" />
-            Add Department
+            {t('add')}
           </Button>
         </div>
 
@@ -1256,9 +1260,9 @@ const AdminDepartments = () => {
           {/* Departments List */}
           <div className="lg:col-span-1">
             <Card className="sticky top-8">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Departments</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('manageDepartments')}</h2>
               {loading && !departments.length ? (
-                <p className="text-gray-600 text-center py-4">Loading...</p>
+                <p className="text-gray-600 text-center py-4">{t('loading')}</p>
               ) : (
                 <div className="space-y-2">
                   {departments.map((dept) => (
@@ -1284,7 +1288,7 @@ const AdminDepartments = () => {
           <div className="lg:col-span-2">
             {loading && (
               <Card className="text-center py-8">
-                <p className="text-gray-600">Loading...</p>
+                <p className="text-gray-600">{t('loading')}</p>
               </Card>
             )}
 
@@ -1296,30 +1300,30 @@ const AdminDepartments = () => {
                     <div>
                       <h2 className="text-2xl font-bold text-gray-900 mb-2">{deptDetails.name}</h2>
                       <p className="text-gray-600 mb-1">
-                        <span className="font-semibold">Department ID:</span> {deptDetails.dept_id}
+                        <span className="font-semibold">{t('departmentId')}:</span> {deptDetails.dept_id}
                       </p>
                       {deptDetails.description && (
                         <p className="text-gray-600">
-                          <span className="font-semibold">Description:</span> {deptDetails.description}
+                          <span className="font-semibold">{t('description')}:</span> {deptDetails.description}
                         </p>
                       )}
                     </div>
 
                     {/* Manager Info */}
                     <div className="bg-white rounded-lg p-4 border border-gray-200">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-3">Department Manager</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3">{t('departmentManager')}</h3>
                       {deptDetails.manager ? (
                         <div>
                           <p className="text-gray-700 font-medium">{deptDetails.manager.full_name}</p>
                           <p className="text-sm text-gray-600">
-                            <span className="font-semibold">Username:</span> {deptDetails.manager.username}
+                            <span className="font-semibold">{t('username')}:</span> {deptDetails.manager.username}
                           </p>
                           <p className="text-sm text-gray-600">
-                            <span className="font-semibold">Email:</span> {deptDetails.manager.email}
+                            <span className="font-semibold">{t('email')}:</span> {deptDetails.manager.email}
                           </p>
                         </div>
                       ) : (
-                        <p className="text-gray-500 italic">No manager assigned</p>
+                        <p className="text-gray-500 italic">{t('noManagerAssigned')}</p>
                       )}
                     </div>
                   </div>
@@ -1331,7 +1335,7 @@ const AdminDepartments = () => {
                     <div className="p-6">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-gray-500 mb-1">Total Employees</p>
+                          <p className="text-sm text-gray-500 mb-1">{t('totalEmployees')}</p>
                           <p className="text-4xl font-bold text-blue-600">{deptDetails.employees?.length || 0}</p>
                         </div>
                         <Users className="w-10 h-10 text-blue-500" />
@@ -1342,7 +1346,7 @@ const AdminDepartments = () => {
                     <div className="p-6">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-gray-500 mb-1">Present Today</p>
+                          <p className="text-sm text-gray-500 mb-1">{t('presentToday')}</p>
                           <p className="text-4xl font-bold text-green-600">{stats.present}</p>
                         </div>
                         <CheckCircle className="w-10 h-10 text-green-500" />
@@ -1353,7 +1357,7 @@ const AdminDepartments = () => {
                     <div className="p-6">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-gray-500 mb-1">Attendance Rate</p>
+                          <p className="text-sm text-gray-500 mb-1">{t('attendanceRate')}</p>
                           <p className="text-4xl font-bold text-purple-600">
                             {deptDetails.employees?.length > 0 
                               ? Math.round((stats.present / deptDetails.employees.length) * 100) 
@@ -1371,7 +1375,7 @@ const AdminDepartments = () => {
                   <div className="mb-6">
                     <div className="flex justify-between items-center mb-4">
                       <h3 className="text-xl font-semibold text-gray-900">
-                        Employees ({viewMode === 'all' ? deptDetails.employees.length : stats.present})
+                        {t('allEmployees')} ({viewMode === 'all' ? deptDetails.employees.length : stats.present})
                       </h3>
                       <div className="flex gap-2">
                         <button
@@ -1382,7 +1386,7 @@ const AdminDepartments = () => {
                               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                           }`}
                         >
-                          All Employees
+                          {t('allEmployees')}
                         </button>
                         <button
                           onClick={() => setViewMode('today')}
@@ -1392,16 +1396,16 @@ const AdminDepartments = () => {
                               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                           }`}
                         >
-                          Today's Attendance
+                          {t('todaysAttendance')}
                         </button>
                         <select
                           value={employmentTypeFilter}
                           onChange={(e) => setEmploymentTypeFilter(e.target.value)}
                           className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 font-medium hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
-                          <option value="all">All Types</option>
-                          <option value="full_time">Full-Time</option>
-                          <option value="part_time">Part-Time</option>
+                          <option value="all">{t('allTypes')}</option>
+                          <option value="full_time">{t('fullTime')}</option>
+                          <option value="part_time">{t('partTime')}</option>
                         </select>
                       </div>
                     </div>
@@ -1410,7 +1414,7 @@ const AdminDepartments = () => {
                     <div className="bg-gray-50 p-4 rounded-lg mb-4 border border-gray-200">
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Select Month & Year</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">{t('selectMonthYear')}</label>
                           <select
                             value={selectedMonth}
                             onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
@@ -1425,7 +1429,7 @@ const AdminDepartments = () => {
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">{t('year')}</label>
                           <select
                             value={selectedYear}
                             onChange={(e) => setSelectedYear(parseInt(e.target.value))}
@@ -1442,7 +1446,7 @@ const AdminDepartments = () => {
                             onClick={downloadMonthlyReport}
                             className="w-full px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition"
                           >
-                            📥 Download Monthly
+                            📥 {t('downloadMonthly')}
                           </button>
                         </div>
 
@@ -1451,7 +1455,7 @@ const AdminDepartments = () => {
                             onClick={downloadWeeklyReport}
                             className="w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition"
                           >
-                            📥 Download Weekly
+                            📥 {t('downloadWeekly')}
                           </button>
                         </div>
                       </div>
@@ -1460,10 +1464,10 @@ const AdminDepartments = () => {
 
                   {/* Employee Monthly Report Download Section */}
                   <div className="bg-blue-50 p-4 rounded-lg mb-6 border border-blue-200">
-                    <h3 className="text-sm font-semibold text-gray-800 mb-3">📄 Download Individual Employee Monthly Report</h3>
+                    <h3 className="text-sm font-semibold text-gray-800 mb-3">📄 {t('downloadIndividualReport')}</h3>
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Employee ID</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('employeeId')}</label>
                         <input
                           type="text"
                           placeholder="e.g., EMP001"
@@ -1474,7 +1478,7 @@ const AdminDepartments = () => {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Month</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('month')}</label>
                         <select
                           value={empDownloadMonth}
                           onChange={(e) => setEmpDownloadMonth(parseInt(e.target.value))}
@@ -1489,7 +1493,7 @@ const AdminDepartments = () => {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('year')}</label>
                         <select
                           value={empDownloadYear}
                           onChange={(e) => setEmpDownloadYear(parseInt(e.target.value))}
@@ -1507,7 +1511,7 @@ const AdminDepartments = () => {
                           disabled={empDownloading}
                           className="w-full px-4 py-2 bg-purple-500 hover:bg-purple-600 disabled:bg-gray-400 text-white rounded-lg font-medium transition"
                         >
-                          {empDownloading ? '⏳ Downloading...' : '📥 Download'}
+                          {empDownloading ? `⏳ ${t('downloading')}` : '📥 ' + t('download')}
                         </button>
                       </div>
                     </div>
@@ -1519,7 +1523,7 @@ const AdminDepartments = () => {
                         <div className="p-6">
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-sm text-gray-500 mb-1">Present</p>
+                              <p className="text-sm text-gray-500 mb-1">{t('present')}</p>
                               <p className="text-3xl font-bold text-green-600">{stats.present}</p>
                             </div>
                             <CheckCircle className="w-8 h-8 text-green-600" />
@@ -1530,7 +1534,7 @@ const AdminDepartments = () => {
                         <div className="p-6">
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-sm text-gray-500 mb-1">Late</p>
+                              <p className="text-sm text-gray-500 mb-1">{t('late')}</p>
                               <p className="text-3xl font-bold text-yellow-600">{stats.late}</p>
                             </div>
                             <AlertCircle className="w-8 h-8 text-yellow-600" />
@@ -1541,7 +1545,7 @@ const AdminDepartments = () => {
                         <div className="p-6">
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-sm text-gray-500 mb-1">Absent</p>
+                              <p className="text-sm text-gray-500 mb-1">{t('absent')}</p>
                               <p className="text-3xl font-bold text-red-600">{stats.absent}</p>
                             </div>
                             <XCircle className="w-8 h-8 text-red-600" />
@@ -1556,24 +1560,24 @@ const AdminDepartments = () => {
                     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                       <div className="px-6 py-4 border-b border-gray-200">
                         <h3 className="text-lg font-semibold text-gray-900">
-                          All Employees in Department
+                          {t('allEmployees')} {t('inDepartment')}
                         </h3>
                       </div>
                       
                       {deptDetails.employees.length === 0 ? (
                         <div className="text-center py-12">
                           <Users className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                          <p className="text-gray-500">No employees in this department</p>
+                          <p className="text-gray-500">{t('noEmployeesInDepartment')}</p>
                         </div>
                       ) : (
                         <div className="overflow-x-auto">
                           <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
                               <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Employee ID</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('employeeId')}</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('email')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('status')}</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200">
@@ -1600,11 +1604,11 @@ const AdminDepartments = () => {
                                             ? 'bg-green-100 text-green-800'
                                             : 'bg-yellow-100 text-yellow-800'
                                         }`}>
-                                          {attendanceRecord?.in_time ? 'Present' : 'Scheduled'}
+                                          {attendanceRecord?.in_time ? t('present') : t('scheduled')}
                                         </span>
                                       ) : (
                                         <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                          Not Scheduled
+                                          {t('notScheduled')}
                                         </span>
                                       )}
                                     </td>
@@ -1621,21 +1625,21 @@ const AdminDepartments = () => {
                     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                       <div className="px-6 py-4 border-b border-gray-200">
                         <h3 className="text-lg font-semibold text-gray-900">
-                          Today's Attendance - {format(new Date(), 'MMMM dd, yyyy')}
+                          {t('todaysAttendanceTable')} - {format(new Date(), 'MMMM dd, yyyy')}
                         </h3>
                       </div>
                       
                       {attendance.length === 0 ? (
                         <div className="text-center py-12">
                           <Clock className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                          <p className="text-gray-500">No scheduled shifts for today</p>
+                          <p className="text-gray-500">{t('noScheduledShifts')}</p>
                         </div>
                       ) : (
                         <div className="overflow-x-auto">
                           <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
                               <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Employee ID</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('employeeId')}</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Employee</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Assigned Shift</th>

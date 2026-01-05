@@ -180,7 +180,7 @@ const NotificationBell = () => {
                       <button
                         onClick={(e) => handleDelete(notification.id, e)}
                         className="text-gray-400 hover:text-red-500"
-                        title="Delete"
+                        title={t('delete')}
                       >
                         <X className="w-4 h-4" />
                       </button>
